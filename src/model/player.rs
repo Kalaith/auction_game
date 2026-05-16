@@ -1,4 +1,4 @@
-use crate::model::{CompletedUpgrade, Property};
+use crate::model::{ActiveRenovation, CompletedUpgrade, Property};
 
 #[derive(Clone, Debug)]
 pub struct Player {
@@ -26,7 +26,9 @@ pub struct OwnedProperty {
     pub purchase_fees: i64,
     pub deposit_paid: i64,
     pub debt: i64,
+    pub walkaway_price: i64,
     pub weeks_held: u32,
+    pub active_renovation: Option<ActiveRenovation>,
     pub upgrades: Vec<CompletedUpgrade>,
     pub hidden_defect_discovered: bool,
 }
@@ -38,6 +40,7 @@ impl OwnedProperty {
         purchase_fees: i64,
         deposit_paid: i64,
         debt: i64,
+        walkaway_price: i64,
     ) -> Self {
         let hidden_defect_discovered = property.hidden_defect_risk >= 0.28
             || (property.hidden_defect_risk >= 0.18 && property.id % 2 == 1);
@@ -47,7 +50,9 @@ impl OwnedProperty {
             purchase_fees,
             deposit_paid,
             debt,
+            walkaway_price,
             weeks_held: 0,
+            active_renovation: None,
             upgrades: Vec::new(),
             hidden_defect_discovered,
         }
@@ -57,6 +62,12 @@ impl OwnedProperty {
         self.upgrades
             .iter()
             .any(|upgrade| upgrade.upgrade_id == upgrade_id)
+    }
+
+    pub fn has_active_upgrade(&self, upgrade_id: &str) -> bool {
+        self.active_renovation
+            .as_ref()
+            .is_some_and(|project| project.upgrade_id == upgrade_id)
     }
 
     pub fn has_defect_repair(&self) -> bool {

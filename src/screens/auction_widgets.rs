@@ -2,22 +2,22 @@ use crate::model::BidderMood;
 use crate::ui::*;
 use macroquad::prelude::*;
 
-pub fn bid_guidance(
+pub fn bid_verdict(
     margin: i64,
     cash_after: i64,
     next_bid: i64,
     walkaway_price: i64,
 ) -> &'static str {
     if next_bid > walkaway_price {
-        "This is above your walk-away reminder. Only bid if you are choosing risk on purpose."
+        "Break Plan"
     } else if margin < 0 {
-        "The next bid is likely underwater before renovation surprises. Stopping is rational."
+        "Bad Deal"
     } else if cash_after < 18_000 {
-        "You can settle, but the cash buffer is thin. Renovation choices will be constrained."
+        "Thin Cash"
     } else if margin > 35_000 {
-        "The next bid still leaves a useful buffer after fees. This is a defensible push."
+        "Safe Bid"
     } else {
-        "The deal is still playable, but each bid is now buying less margin."
+        "Thin Margin"
     }
 }
 

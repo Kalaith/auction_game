@@ -62,8 +62,26 @@ pub struct UpgradeData {
 }
 
 #[derive(Clone, Debug)]
+pub struct ActiveRenovation {
+    pub upgrade_id: String,
+    pub upgrade_name: String,
+    pub contractor: ContractorTier,
+    pub total_cost: i64,
+    pub value_boost: i64,
+    pub appeal_boost: i32,
+    pub sale_emotion_boost: i32,
+    pub removes_defect: bool,
+    pub weeks_total: u32,
+    pub weeks_remaining: u32,
+    pub permit_risk: i32,
+    pub delay_weeks: u32,
+    pub note: String,
+}
+
+#[derive(Clone, Debug)]
 pub struct CompletedUpgrade {
     pub upgrade_id: String,
+    pub name: String,
     pub contractor: ContractorTier,
     pub actual_cost: i64,
     pub value_boost: i64,

@@ -1,15 +1,21 @@
 use crate::data::GameData;
 use crate::model::{
-    AuctionStatus, ContractorTier, OwnedProperty, Player, Property, PropertyId, ResearchLevel,
-    ResearchReport,
+    AuctionStatus, CampaignStatus, ContractorTier, OwnedProperty, Player, Property, PropertyId,
+    ResearchLevel, ResearchReport,
 };
 use crate::screens::Screen;
 use crate::sim::auction_sim::{create_auction, update_auction};
-use crate::sim::renovation::{complete_upgrade, quote_renovation};
+use crate::sim::campaign::{
+    apply_weekly_pressure, campaign_status, next_unlock_note, suburb_is_unlocked,
+};
+use crate::sim::finance::finance_snapshot;
+use crate::sim::renovation::{
+    progress_player_renovations, quote_renovation, start_upgrade_project,
+};
 use crate::sim::research::recommended_walkaway;
 use crate::sim::sale_sim::{simulate_sale, ReserveChoice, SaleResult};
 use crate::sim::valuation::{
-    cash_needed_to_settle, deposit, market_adjusted_value, purchase_fees, sale_fees,
+    cash_needed_to_settle, deposit, market_adjusted_value, net_worth, purchase_fees, sale_fees,
 };
 use crate::ui::*;
 use macroquad::prelude::*;
@@ -41,6 +47,8 @@ pub struct App {
     pub(crate) sale_result: Option<SaleResult>,
     pub(crate) research_reports: HashMap<PropertyId, ResearchReport>,
     pub(crate) selected_contractor: ContractorTier,
+    pub(crate) campaign_status: CampaignStatus,
+    pub(crate) listing_filter: usize,
     pub(crate) walkaway_price: i64,
     pub(crate) status: String,
 }
@@ -60,6 +68,8 @@ impl App {
             sale_result: None,
             research_reports: HashMap::new(),
             selected_contractor: ContractorTier::Reliable,
+            campaign_status: CampaignStatus::Active,
+            listing_filter: 0,
             walkaway_price: 600_000,
             status: "Read the market, pick a property, and keep your margin alive.".to_string(),
         };
@@ -77,6 +87,7 @@ impl App {
 
     pub fn draw(&mut self) {
         clear_background(BACKGROUND);
+        begin_ui_frame();
         self.draw_header();
 
         match self.screen.clone() {
@@ -103,11 +114,11 @@ impl App {
     }
 
     fn draw_header(&mut self) {
-        draw_rectangle(0.0, 0.0, screen_width(), 68.0, PANEL_DARK);
+        draw_rectangle(0.0, 0.0, ui_width(), 68.0, PANEL_DARK);
         label("Auction House Tycoon", 28.0, 42.0, 30, TEXT_BRIGHT);
-        label(&format!("Week {}", self.week), 342.0, 41.0, 19, TEXT_DIM);
+        label(&format!("Week {}", self.week), 396.0, 41.0, 19, TEXT_DIM);
 
-        let mut x = screen_width() - 610.0;
+        let mut x = ui_width() - 610.0;
         let nav_enabled = self
             .current_auction
             .as_ref()
@@ -152,9 +163,9 @@ impl App {
     }
 
     fn draw_status_bar(&self) {
-        let rect = Rect::new(0.0, screen_height() - 40.0, screen_width(), 40.0);
+        let rect = Rect::new(0.0, ui_height() - 40.0, ui_width(), 40.0);
         draw_rectangle(rect.x, rect.y, rect.w, rect.h, PANEL_DARK);
-        label(&self.status, 28.0, screen_height() - 15.0, 17, TEXT_DIM);
+        label(&self.status, 28.0, ui_height() - 15.0, 17, TEXT_DIM);
     }
 
     pub(crate) fn open_property_detail(&mut self, index: usize) {
@@ -231,9 +242,13 @@ impl App {
         let fees = purchase_fees(purchase_price);
         let deposit_paid = deposit(purchase_price);
         let cash_needed = cash_needed_to_settle(purchase_price);
-        if self.player.cash < cash_needed {
-            self.status =
-                "You cannot settle this contract with the current cash balance.".to_string();
+        let finance = finance_snapshot(&self.player, self.market(), purchase_price);
+        if self.player.cash < cash_needed || !finance.can_buy {
+            self.status = format!(
+                "Finance failed: {} cash after settle, {} bank headroom.",
+                format_money(finance.cash_after_settle),
+                format_money(finance.headroom_after)
+            );
             return;
         }
 
@@ -247,6 +262,7 @@ impl App {
             fees,
             deposit_paid,
             property_debt,
+            auction.player_walkaway_price,
         );
         self.purchase_debrief = Some(debrief);
         self.player.properties.push(owned);
@@ -274,7 +290,13 @@ impl App {
         else {
             return;
         };
-        if self.player.properties[index].has_upgrade(upgrade_id) {
+        if self.player.properties[index].has_upgrade(upgrade_id)
+            || self.player.properties[index].has_active_upgrade(upgrade_id)
+        {
+            return;
+        }
+        if self.player.properties[index].active_renovation.is_some() {
+            self.status = "Finish the current renovation before starting another.".to_string();
             return;
         }
 
@@ -284,23 +306,19 @@ impl App {
             self.selected_contractor,
             self.market(),
         );
-        if self.player.cash < quote.cash_outlay {
-            self.status = "Not enough cash for the upgrade and holding costs.".to_string();
+        if self.player.cash < quote.total_cost {
+            self.status = "Not enough cash to start that renovation.".to_string();
             return;
         }
 
-        self.player.cash -= quote.cash_outlay;
-        self.player.properties[index]
-            .upgrades
-            .push(complete_upgrade(&quote));
-        self.player.properties[index].weeks_held += quote.holding_weeks;
+        self.player.cash -= quote.total_cost;
+        let project = start_upgrade_project(&quote, self.week);
+        self.player.properties[index].active_renovation = Some(project.clone());
         self.status = format!(
-            "{} completed by {} contractor. {} weeks elapsed, including {} holding costs. {}",
+            "{} started: {} week job, {} paid. Advance weeks to finish.",
             upgrade.name,
-            quote.contractor.label(),
-            quote.holding_weeks,
-            format_money(quote.holding_cost),
-            quote.warning
+            project.weeks_total,
+            format_money(quote.total_cost)
         );
     }
 
@@ -313,6 +331,10 @@ impl App {
         else {
             return;
         };
+        if self.player.properties[index].active_renovation.is_some() {
+            self.status = "Finish the active renovation before selling.".to_string();
+            return;
+        }
         let owned = self.player.properties[index].clone();
         let result = simulate_sale(&owned, self.market(), choice);
 
@@ -335,6 +357,14 @@ impl App {
         }
 
         self.sale_result = Some(result);
+        let current_net_worth = net_worth(&self.player, self.market());
+        self.campaign_status = campaign_status(self.week, current_net_worth);
+        if self.campaign_status == CampaignStatus::Won {
+            self.status = format!(
+                "Campaign won with {} net worth. Review the sale result.",
+                format_money(current_net_worth)
+            );
+        }
         self.screen = Screen::SaleResult;
     }
 
@@ -386,14 +416,67 @@ impl App {
     }
 
     pub(crate) fn advance_week(&mut self) {
+        if self.campaign_status.is_finished() {
+            self.status = format!("{}.", self.campaign_status.label());
+            return;
+        }
+
+        let market = self.market().clone();
+        let pressure = apply_weekly_pressure(&mut self.player, &market);
+        let completed_jobs = progress_player_renovations(&mut self.player);
         self.week += 1;
         self.market_index = ((self.week - 1) as usize) % self.data.market_events.len();
+        let current_net_worth = net_worth(&self.player, self.market());
+        self.campaign_status = campaign_status(self.week, current_net_worth);
         self.refresh_available_properties();
-        self.status =
-            "New week, new market pulse. Re-check suburb demand before bidding.".to_string();
+        self.status = match self.campaign_status {
+            CampaignStatus::Won => format!(
+                "Campaign won in week {} with {} net worth.",
+                self.week,
+                format_money(current_net_worth)
+            ),
+            CampaignStatus::Failed => format!(
+                "Campaign failed after week 52. Final net worth: {}.",
+                format_money(current_net_worth)
+            ),
+            CampaignStatus::Active => {
+                let pressure_note = if pressure.total > 0 {
+                    format!(
+                        "Paid {} carrying costs ({} holding, {} interest).",
+                        format_money(pressure.total),
+                        format_money(pressure.holding_cost),
+                        format_money(pressure.debt_interest)
+                    )
+                } else {
+                    "No carrying costs this week.".to_string()
+                };
+                let cashflow_note = if pressure.shortfall_added_to_debt > 0 {
+                    format!(
+                        " Cash shortfall added {} to debt.",
+                        format_money(pressure.shortfall_added_to_debt)
+                    )
+                } else {
+                    String::new()
+                };
+                let renovation_note = if completed_jobs.is_empty() {
+                    String::new()
+                } else {
+                    format!(" {}", completed_jobs.join(" "))
+                };
+                format!(
+                    "Week {} market pulse. {}{}{} {}",
+                    self.week,
+                    pressure_note,
+                    cashflow_note,
+                    renovation_note,
+                    next_unlock_note(self.week, current_net_worth, self.player.reputation)
+                )
+            }
+        };
     }
 
     fn refresh_available_properties(&mut self) {
+        let current_net_worth = net_worth(&self.player, self.market());
         let owned_ids: Vec<PropertyId> = self
             .player
             .properties
@@ -406,6 +489,14 @@ impl App {
             .iter()
             .map(Property::from_template)
             .filter(|property| !owned_ids.contains(&property.id))
+            .filter(|property| {
+                suburb_is_unlocked(
+                    &property.suburb,
+                    self.week,
+                    current_net_worth,
+                    self.player.reputation,
+                )
+            })
             .collect();
     }
 }
