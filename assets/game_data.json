@@ -1,0 +1,265 @@
+{
+  "properties": [
+    {
+      "id": 0,
+      "address": "14 Wattle Street",
+      "suburb": "Northbank",
+      "bedrooms": 3,
+      "bathrooms": 1,
+      "condition": "tired",
+      "land_size": 512,
+      "market_value": 620000,
+      "guide_price": 560000,
+      "reserve_price": 590000,
+      "appeal": 58,
+      "renovation_potential": 78,
+      "hidden_defect_risk": 0.18,
+      "holding_cost_per_week": 720,
+      "buyer_demand": 71,
+      "notes": "School-zone cottage with dated interiors and a deep back yard."
+    },
+    {
+      "id": 1,
+      "address": "8 Quarry Lane",
+      "suburb": "Ridgefield",
+      "bedrooms": 4,
+      "bathrooms": 2,
+      "condition": "rough",
+      "land_size": 720,
+      "market_value": 540000,
+      "guide_price": 470000,
+      "reserve_price": 505000,
+      "appeal": 42,
+      "renovation_potential": 91,
+      "hidden_defect_risk": 0.34,
+      "holding_cost_per_week": 650,
+      "buyer_demand": 56,
+      "notes": "Large block, poor presentation, and serious upside if defects stay manageable."
+    },
+    {
+      "id": 2,
+      "address": "27 Fern Circuit",
+      "suburb": "Eastvale",
+      "bedrooms": 3,
+      "bathrooms": 2,
+      "condition": "solid",
+      "land_size": 438,
+      "market_value": 710000,
+      "guide_price": 665000,
+      "reserve_price": 690000,
+      "appeal": 73,
+      "renovation_potential": 52,
+      "hidden_defect_risk": 0.08,
+      "holding_cost_per_week": 820,
+      "buyer_demand": 76,
+      "notes": "Move-in ready family home with less upside but fewer nasty surprises."
+    },
+    {
+      "id": 3,
+      "address": "3 Paperbark Road",
+      "suburb": "Southmere",
+      "bedrooms": 2,
+      "bathrooms": 1,
+      "condition": "rough",
+      "land_size": 335,
+      "market_value": 430000,
+      "guide_price": 390000,
+      "reserve_price": 410000,
+      "appeal": 36,
+      "renovation_potential": 83,
+      "hidden_defect_risk": 0.29,
+      "holding_cost_per_week": 510,
+      "buyer_demand": 48,
+      "notes": "Entry-level renovator with cheap holding costs and weak buyer emotion."
+    },
+    {
+      "id": 4,
+      "address": "19 Harbour View",
+      "suburb": "Northbank",
+      "bedrooms": 4,
+      "bathrooms": 2,
+      "condition": "premium",
+      "land_size": 610,
+      "market_value": 860000,
+      "guide_price": 820000,
+      "reserve_price": 845000,
+      "appeal": 86,
+      "renovation_potential": 31,
+      "hidden_defect_risk": 0.05,
+      "holding_cost_per_week": 1040,
+      "buyer_demand": 82,
+      "notes": "High appeal, high price, and limited room for a quick flip margin."
+    },
+    {
+      "id": 5,
+      "address": "42 Foundry Crescent",
+      "suburb": "Westport",
+      "bedrooms": 3,
+      "bathrooms": 1,
+      "condition": "tired",
+      "land_size": 590,
+      "market_value": 500000,
+      "guide_price": 455000,
+      "reserve_price": 480000,
+      "appeal": 49,
+      "renovation_potential": 68,
+      "hidden_defect_risk": 0.21,
+      "holding_cost_per_week": 590,
+      "buyer_demand": 53,
+      "notes": "Industrial-edge suburb with improving transport links and patchy demand."
+    }
+  ],
+  "bidder_profiles": [
+    {
+      "name": "Mia and Tom",
+      "bidder_type": "first_home_buyer",
+      "aggression": 0.64,
+      "patience": 0.58,
+      "budget_bias": 0.02
+    },
+    {
+      "name": "Victor Hale",
+      "bidder_type": "investor",
+      "aggression": 0.46,
+      "patience": 0.82,
+      "budget_bias": -0.04
+    },
+    {
+      "name": "Nadia Cruz",
+      "bidder_type": "renovator",
+      "aggression": 0.59,
+      "patience": 0.67,
+      "budget_bias": 0.01
+    },
+    {
+      "name": "Kestrel Developments",
+      "bidder_type": "developer",
+      "aggression": 0.72,
+      "patience": 0.54,
+      "budget_bias": 0.05
+    },
+    {
+      "name": "Dale Mercer",
+      "bidder_type": "ego_bidder",
+      "aggression": 0.86,
+      "patience": 0.36,
+      "budget_bias": 0.08
+    },
+    {
+      "name": "Priya Shah",
+      "bidder_type": "bargain_hunter",
+      "aggression": 0.38,
+      "patience": 0.74,
+      "budget_bias": -0.10
+    }
+  ],
+  "upgrades": [
+    {
+      "id": "paint_clean",
+      "name": "Paint and Clean",
+      "cost": 9000,
+      "value_boost": 18000,
+      "appeal_boost": 8,
+      "sale_emotion_boost": 4,
+      "removes_defect": false,
+      "description": "Cheap presentation lift. Reliable, but not a miracle."
+    },
+    {
+      "id": "kitchen_refresh",
+      "name": "Kitchen Refresh",
+      "cost": 26000,
+      "value_boost": 41000,
+      "appeal_boost": 12,
+      "sale_emotion_boost": 7,
+      "removes_defect": false,
+      "description": "Family buyers notice it fast. Works best in high-demand suburbs."
+    },
+    {
+      "id": "bathroom_upgrade",
+      "name": "Bathroom Upgrade",
+      "cost": 22000,
+      "value_boost": 31000,
+      "appeal_boost": 9,
+      "sale_emotion_boost": 5,
+      "removes_defect": false,
+      "description": "Solid value boost with moderate cost."
+    },
+    {
+      "id": "landscaping",
+      "name": "Landscaping",
+      "cost": 14000,
+      "value_boost": 19000,
+      "appeal_boost": 10,
+      "sale_emotion_boost": 8,
+      "removes_defect": false,
+      "description": "Raises auction energy more than the valuation spreadsheet admits."
+    },
+    {
+      "id": "structural_repair",
+      "name": "Structural Repair",
+      "cost": 42000,
+      "value_boost": 27000,
+      "appeal_boost": 3,
+      "sale_emotion_boost": 0,
+      "removes_defect": true,
+      "description": "Expensive risk control. Often necessary, rarely exciting."
+    },
+    {
+      "id": "staging",
+      "name": "Staging",
+      "cost": 7000,
+      "value_boost": 6000,
+      "appeal_boost": 4,
+      "sale_emotion_boost": 10,
+      "removes_defect": false,
+      "description": "Short-lived sale boost for emotional bidding."
+    }
+  ],
+  "market_events": [
+    {
+      "title": "Week 1 Market News",
+      "items": [
+        "Northbank family homes are hot this week. Buyer demand rises sharply.",
+        "Renovation grants are being discussed, lifting fixer-upper interest.",
+        "Banks keep rates steady, so borrowing capacity holds."
+      ],
+      "suburb_modifiers": {
+        "Northbank": 0.08,
+        "Ridgefield": 0.03,
+        "Eastvale": 0.02
+      },
+      "renovator_modifier": 0.04,
+      "buyer_budget_modifier": 0.01
+    },
+    {
+      "title": "Week 2 Market News",
+      "items": [
+        "Interest rate fears trim buyer budgets across the board.",
+        "Eastvale school ranking improves, supporting family demand.",
+        "Developers are cautious unless the land component is strong."
+      ],
+      "suburb_modifiers": {
+        "Eastvale": 0.06,
+        "Westport": -0.03,
+        "Southmere": -0.02
+      },
+      "renovator_modifier": -0.01,
+      "buyer_budget_modifier": -0.04
+    },
+    {
+      "title": "Week 3 Market News",
+      "items": [
+        "Transport upgrade rumours lift Westport buyer interest.",
+        "Cosmetic renovations are performing well at auction.",
+        "Premium homes are taking longer to sell."
+      ],
+      "suburb_modifiers": {
+        "Westport": 0.07,
+        "Northbank": -0.01,
+        "Southmere": 0.02
+      },
+      "renovator_modifier": 0.03,
+      "buyer_budget_modifier": 0.00
+    }
+  ]
+}
