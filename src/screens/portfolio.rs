@@ -80,6 +80,7 @@ impl App {
             Rect::new(main.x + 842.0, stat_y, main.w - 862.0, 128.0),
             &owned,
             bank_room,
+            self.market(),
         );
 
         label(

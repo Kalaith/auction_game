@@ -1,6 +1,7 @@
 use crate::model::{
-    Auction, AuctionStatus, BidLog, Bidder, BidderActor, BidderMood, BidderProfileData, BidderType,
-    Condition, MarketEvent, Property,
+    Auction, AuctionStatus, AuctionTemperature, BidLog, Bidder, BidderActor, BidderMood,
+    BidderProfileData, BidderType, Condition, DealArchetype, MarketEvent, Property, ResearchLevel,
+    WalkawayStyle,
 };
 use crate::sim::valuation::{market_adjusted_value, round_down_to_increment};
 use macroquad::rand::gen_range;
@@ -13,22 +14,32 @@ pub fn create_auction(
     market: &MarketEvent,
     profiles: &[BidderProfileData],
     player_walkaway_price: i64,
+    player_research_level: ResearchLevel,
+    walkaway_style: WalkawayStyle,
 ) -> Auction {
     let mut bidders = Vec::new();
     for offset in 0..3 {
         let profile = &profiles[(property.id + offset) % profiles.len()];
         let max_price = bidder_ceiling(property, market, profile);
+        let pressure_tolerance = pressure_tolerance(profile.bidder_type, profile.patience);
+        let overbid_tendency = overbid_tendency(profile.bidder_type, profile.aggression);
         bidders.push(Bidder {
             name: profile.name.clone(),
             bidder_type: profile.bidder_type,
             max_price,
             aggression: profile.aggression,
             patience: profile.patience,
+            pressure_tolerance,
+            overbid_tendency,
             reaction_timer: 1.0 + offset as f32 * 0.55,
             bid_count: 0,
             heat: 35 + (profile.aggression * 35.0) as i32,
             mood: BidderMood::Watching,
             tell: opening_tell(profile.bidder_type).to_string(),
+            preference: bidder_preference(profile.bidder_type).to_string(),
+            weakness: bidder_weakness(profile.bidder_type).to_string(),
+            danger: bidder_danger(profile.bidder_type).to_string(),
+            rhythm: bidding_rhythm(profile.bidder_type).to_string(),
             active: true,
             has_logged_exit: false,
             stretch_bid_used: false,
@@ -58,6 +69,10 @@ pub fn create_auction(
             seconds_remaining: AUCTION_DURATION_SECONDS,
         }],
         player_walkaway_price,
+        player_research_level,
+        walkaway_style,
+        temperature: initial_temperature(property, market),
+        market_heat: market_heat(property, market),
     }
 }
 
@@ -66,6 +81,7 @@ pub fn update_auction(auction: &mut Auction, dt: f32) {
         return;
     }
 
+    auction.temperature = auction_temperature(auction);
     auction.seconds_remaining = (auction.seconds_remaining - dt).max(0.0);
     auction.call_timer -= dt;
 
@@ -110,6 +126,7 @@ pub fn update_auction(auction: &mut Auction, dt: f32) {
         place_npc_bid(auction, index);
     }
 
+    auction.temperature = auction_temperature(auction);
     if auction.seconds_remaining <= 0.0 {
         finish_auction(auction);
     }
@@ -124,6 +141,7 @@ pub fn place_player_bid(auction: &mut Auction) {
     auction.current_bid = next_bid;
     auction.last_bidder = Some(BidderActor::Player);
     extend_if_needed(auction);
+    auction.temperature = auction_temperature(auction);
 
     if next_bid > auction.player_walkaway_price {
         push_log(
@@ -156,6 +174,95 @@ pub fn stop_player_bidding(auction: &mut Auction) {
     );
 }
 
+pub fn hold_player_position(auction: &mut Auction) -> String {
+    if !auction.is_running() || !auction.is_player_active {
+        return "The room has already moved past your paddle.".to_string();
+    }
+
+    let read = room_read(auction);
+    push_log(auction, format!("You hold. {read}"));
+    auction.call_timer = auction.call_timer.min(0.45);
+    for bidder in &mut auction.bidders {
+        if bidder.active {
+            bidder.reaction_timer = bidder.reaction_timer.min(0.45);
+        }
+    }
+    read
+}
+
+pub fn room_read(auction: &Auction) -> String {
+    let next_bid = auction.next_bid();
+    let mut best: Option<(usize, i64)> = None;
+
+    for (index, bidder) in auction.bidders.iter().enumerate() {
+        if !bidder.active {
+            continue;
+        }
+        let ceiling = bidder_effective_ceiling(auction, index);
+        let headroom = ceiling - next_bid;
+        if best.is_none_or(|(_, best_headroom)| headroom < best_headroom) {
+            best = Some((index, headroom));
+        }
+    }
+
+    let Some((index, headroom)) = best else {
+        return "No active bidder wants the next bid.".to_string();
+    };
+    let bidder = &auction.bidders[index];
+    if headroom < 0 {
+        format!("{} is priced out if the room asks again.", bidder.name)
+    } else if headroom <= auction.bid_increment {
+        format!("{} is near ceiling; holding may flush them.", bidder.name)
+    } else if bidder.bidder_type == BidderType::EgoBidder
+        && auction.last_bidder == Some(BidderActor::Player)
+    {
+        format!(
+            "{} reacts to your paddle; slower bidding reduces the bait.",
+            bidder.name
+        )
+    } else if bidder.bidder_type == BidderType::Investor {
+        format!(
+            "{} is rational; pressure is less dangerous than price.",
+            bidder.name
+        )
+    } else if bidder.bidder_type == BidderType::BargainHunter {
+        format!(
+            "{} needs value; reserve pressure can push them out.",
+            bidder.name
+        )
+    } else {
+        format!(
+            "{} still has room, but their tell matters more than speed.",
+            bidder.name
+        )
+    }
+}
+
+pub fn quick_resolve_auction(auction: &mut Auction) {
+    if !auction.is_running() || auction.is_player_active {
+        return;
+    }
+
+    push_log(
+        auction,
+        "You stay out. The remaining bidders resolve the room quickly.".to_string(),
+    );
+
+    for _ in 0..12 {
+        auction.temperature = auction_temperature(auction);
+        let Some(index) = quick_resolve_bidder(auction) else {
+            break;
+        };
+
+        auction.seconds_remaining = auction.seconds_remaining.max(10.0);
+        place_npc_bid(auction, index);
+    }
+
+    auction.seconds_remaining = 0.0;
+    auction.temperature = AuctionTemperature::FinalCall;
+    finish_auction(auction);
+}
+
 fn place_npc_bid(auction: &mut Auction, index: usize) {
     let previous_bid = auction.current_bid;
     let next_bid = npc_bid_amount(auction, index);
@@ -173,6 +280,7 @@ fn place_npc_bid(auction: &mut Auction, index: usize) {
     auction.bidders[index].tell = bid_tell(&auction.bidders[index]).to_string();
     auction.bidders[index].reaction_timer = gen_range(1.2, 3.2);
     extend_if_needed(auction);
+    auction.temperature = auction_temperature(auction);
 
     let name = auction.bidders[index].name.clone();
     let action = if was_stretch {
@@ -186,6 +294,44 @@ fn place_npc_bid(auction: &mut Auction, index: usize) {
         auction,
         format!("{name} {action} {}.", crate::ui::format_money(next_bid)),
     );
+}
+
+fn quick_resolve_bidder(auction: &mut Auction) -> Option<usize> {
+    let next_bid = auction.next_bid();
+    let mut best: Option<(usize, f32)> = None;
+
+    for index in 0..auction.bidders.len() {
+        if !auction.bidders[index].active {
+            continue;
+        }
+        if auction.last_bidder == Some(BidderActor::Npc(index)) {
+            continue;
+        }
+
+        update_bidder_tell(auction, index, next_bid);
+        let ceiling = bidder_effective_ceiling(auction, index);
+        if next_bid > ceiling {
+            retire_bidder(auction, index);
+            continue;
+        }
+
+        let headroom = ((ceiling - next_bid) as f32 / 120_000.0).clamp(0.0, 0.32);
+        let score = bid_chance(auction, index, next_bid)
+            + headroom
+            + auction.bidders[index].pressure_tolerance * 0.08
+            - auction.bidders[index].bid_count as f32 * 0.025;
+
+        if best.is_none_or(|(_, best_score)| score > best_score) {
+            best = Some((index, score));
+        }
+    }
+
+    let (index, score) = best?;
+    if auction.current_bid < auction.reserve_price || score >= 0.42 {
+        Some(index)
+    } else {
+        None
+    }
 }
 
 fn finish_auction(auction: &mut Auction) {
@@ -265,6 +411,8 @@ fn auctioneer_line(auction: &Auction) -> String {
         )
     } else if auction.current_bid < auction.reserve_price {
         "Still looking for a bid that meets reserve.".to_string()
+    } else if auction.temperature == AuctionTemperature::FomoSpiral {
+        "The room is chasing the room now, not the house.".to_string()
     } else if auction.last_bidder == Some(BidderActor::Player) {
         "You are holding the top bid. Stay disciplined.".to_string()
     } else {
@@ -293,14 +441,25 @@ fn bidder_effective_ceiling(auction: &Auction, index: usize) -> i64 {
         return bidder.max_price;
     }
 
+    let emotional_room = matches!(
+        auction.temperature,
+        AuctionTemperature::FomoSpiral | AuctionTemperature::FinalCall
+    );
     let can_stretch = match bidder.bidder_type {
-        BidderType::FirstHomeBuyer => auction.seconds_remaining < 16.0,
+        BidderType::FirstHomeBuyer => auction.seconds_remaining < 16.0 || emotional_room,
         BidderType::EgoBidder => auction.last_bidder == Some(BidderActor::Player),
-        _ => false,
+        BidderType::Renovator => {
+            emotional_room
+                && matches!(
+                    auction.property.condition,
+                    Condition::Rough | Condition::Tired
+                )
+        }
+        _ => emotional_room && bidder.overbid_tendency > 0.68,
     };
 
     if can_stretch {
-        bidder.max_price + auction.bid_increment
+        bidder.max_price + auction.bid_increment * stretch_increments(bidder.overbid_tendency)
     } else {
         bidder.max_price
     }
@@ -317,7 +476,12 @@ fn bid_chance(auction: &Auction, index: usize, next_bid: i64) -> f32 {
     } else {
         0.05
     };
-    let mut chance = (bidder.aggression * 0.42) + (bidder.patience * 0.10) + value_room + urgency;
+    let temperature_pull = temperature_bid_modifier(auction.temperature, bidder);
+    let mut chance = (bidder.aggression * 0.42)
+        + (bidder.patience * 0.10)
+        + value_room
+        + urgency
+        + temperature_pull;
 
     match bidder.bidder_type {
         BidderType::FirstHomeBuyer => {
@@ -333,6 +497,12 @@ fn bid_chance(auction: &Auction, index: usize, next_bid: i64) -> f32 {
             } else {
                 0.02
             };
+            if matches!(
+                auction.temperature,
+                AuctionTemperature::FomoSpiral | AuctionTemperature::FinalCall
+            ) {
+                chance -= 0.08;
+            }
         }
         BidderType::Renovator => {
             if matches!(
@@ -363,6 +533,21 @@ fn bid_chance(auction: &Auction, index: usize, next_bid: i64) -> f32 {
         }
     }
 
+    match auction.property.deal_archetype {
+        DealArchetype::HotSuburbFomo | DealArchetype::AuctionTrap => chance += 0.08,
+        DealArchetype::QuietBargain if bidder.bidder_type == BidderType::BargainHunter => {
+            chance += 0.12;
+        }
+        DealArchetype::LandValuePlay if bidder.bidder_type == BidderType::Developer => {
+            chance += 0.10;
+        }
+        DealArchetype::PrettyTrap if bidder.bidder_type == BidderType::Investor => chance -= 0.06,
+        DealArchetype::RiskyFixer if bidder.bidder_type == BidderType::FirstHomeBuyer => {
+            chance -= 0.07;
+        }
+        _ => {}
+    }
+
     chance.clamp(0.03, 0.92)
 }
 
@@ -381,6 +566,11 @@ fn npc_bid_amount(auction: &Auction, index: usize) -> i64 {
                 jump_increments = 2;
             }
         }
+        BidderType::FirstHomeBuyer => {
+            if auction.temperature == AuctionTemperature::FomoSpiral && bidder.bid_count > 1 {
+                jump_increments = 2;
+            }
+        }
         _ => {}
     }
 
@@ -393,6 +583,7 @@ fn update_bidder_tell(auction: &mut Auction, index: usize, next_bid: i64) {
         return;
     }
 
+    let previous_mood = auction.bidders[index].mood;
     let effective_ceiling = bidder_effective_ceiling(auction, index);
     let headroom = effective_ceiling - next_bid;
     let mood = if next_bid > auction.bidders[index].max_price {
@@ -415,6 +606,11 @@ fn update_bidder_tell(auction: &mut Auction, index: usize, next_bid: i64) {
     };
     auction.bidders[index].tell =
         tell_for(auction.bidders[index].bidder_type, mood, &auction.property).to_string();
+    if previous_mood != mood && matches!(mood, BidderMood::Interested | BidderMood::Hesitating) {
+        let name = auction.bidders[index].name.clone();
+        let clue = table_clue(auction.bidders[index].bidder_type, mood, &auction.property);
+        push_log(auction, format!("{name} {clue}"));
+    }
 }
 
 fn opening_tell(bidder_type: BidderType) -> &'static str {
@@ -477,6 +673,30 @@ fn tell_for(bidder_type: BidderType, mood: BidderMood, property: &Property) -> &
     }
 }
 
+fn table_clue(bidder_type: BidderType, mood: BidderMood, property: &Property) -> &'static str {
+    match (bidder_type, mood) {
+        (BidderType::Investor, BidderMood::Hesitating) => "pauses when the margin gets thin.",
+        (BidderType::Renovator, BidderMood::Interested)
+            if matches!(property.condition, Condition::Rough | Condition::Tired) =>
+        {
+            "studies the repair notes again."
+        }
+        (BidderType::Developer, BidderMood::Interested) if property.land_size >= 600 => {
+            "keeps checking the land size."
+        }
+        (BidderType::BargainHunter, BidderMood::Hesitating) => "waits for the room to blink.",
+        (BidderType::FirstHomeBuyer, BidderMood::Interested) => {
+            "moves quickly on the family appeal."
+        }
+        (BidderType::EgoBidder, BidderMood::Interested) => {
+            "watches your paddle more than the house."
+        }
+        (_, BidderMood::Interested) => "leans back into the auction.",
+        (_, BidderMood::Hesitating) => "hesitates.",
+        _ => "keeps watching.",
+    }
+}
+
 fn bidder_ceiling(property: &Property, market: &MarketEvent, profile: &BidderProfileData) -> i64 {
     let mut modifier = profile.budget_bias + market.buyer_budget_modifier;
 
@@ -508,10 +728,178 @@ fn bidder_ceiling(property: &Property, market: &MarketEvent, profile: &BidderPro
         }
     }
 
+    match property.deal_archetype {
+        DealArchetype::RiskyFixer if profile.bidder_type == BidderType::Renovator => {
+            modifier += 0.04;
+        }
+        DealArchetype::PrettyTrap if profile.bidder_type == BidderType::FirstHomeBuyer => {
+            modifier += 0.03;
+        }
+        DealArchetype::LandValuePlay if profile.bidder_type == BidderType::Developer => {
+            modifier += 0.06;
+        }
+        DealArchetype::HotSuburbFomo if profile.bidder_type == BidderType::EgoBidder => {
+            modifier += 0.05;
+        }
+        DealArchetype::QuietBargain if profile.bidder_type == BidderType::BargainHunter => {
+            modifier += 0.05;
+        }
+        DealArchetype::RenovatorBait if profile.bidder_type == BidderType::Renovator => {
+            modifier += 0.05;
+        }
+        DealArchetype::RentalHold if profile.bidder_type == BidderType::Investor => {
+            modifier += 0.04;
+        }
+        DealArchetype::AuctionTrap => {
+            modifier += 0.03;
+        }
+        _ => {}
+    }
+
     let market_value = market_adjusted_value(property, market);
     round_down_to_increment(
         (market_value as f32 * (0.96 + modifier)) as i64,
         BID_INCREMENT,
     )
     .max(property.guide_price)
+}
+
+fn market_heat(property: &Property, market: &MarketEvent) -> i32 {
+    (property.buyer_demand + (market.suburb_modifier(&property.suburb) * 100.0) as i32)
+        .clamp(20, 98)
+}
+
+fn initial_temperature(property: &Property, market: &MarketEvent) -> AuctionTemperature {
+    let heat = market_heat(property, market);
+    if heat >= 82 || property.deal_archetype == DealArchetype::AuctionTrap {
+        AuctionTemperature::HeatingUp
+    } else if heat >= 58 {
+        AuctionTemperature::SteadyInterest
+    } else {
+        AuctionTemperature::QuietRoom
+    }
+}
+
+fn auction_temperature(auction: &Auction) -> AuctionTemperature {
+    if auction.seconds_remaining < 9.0 {
+        return AuctionTemperature::FinalCall;
+    }
+
+    let active_bidders = auction
+        .bidders
+        .iter()
+        .filter(|bidder| bidder.active)
+        .count() as i32;
+    let reserve_met = auction.current_bid >= auction.reserve_price;
+    let pressure = 100.0 - auction.seconds_remaining / AUCTION_DURATION_SECONDS * 100.0;
+    let mut heat = auction.market_heat + active_bidders * 7 + (pressure * 0.28) as i32;
+
+    if reserve_met {
+        heat += 10;
+    }
+    if auction.overtime_count > 0 {
+        heat += 14;
+    }
+    if matches!(
+        auction.property.deal_archetype,
+        DealArchetype::HotSuburbFomo | DealArchetype::AuctionTrap
+    ) {
+        heat += 8;
+    }
+
+    if heat >= 112 {
+        AuctionTemperature::FomoSpiral
+    } else if heat >= 86 {
+        AuctionTemperature::HeatingUp
+    } else if heat >= 58 {
+        AuctionTemperature::SteadyInterest
+    } else {
+        AuctionTemperature::QuietRoom
+    }
+}
+
+fn temperature_bid_modifier(temperature: AuctionTemperature, bidder: &Bidder) -> f32 {
+    match temperature {
+        AuctionTemperature::QuietRoom => -0.04 + bidder.patience * 0.04,
+        AuctionTemperature::SteadyInterest => 0.02,
+        AuctionTemperature::HeatingUp => 0.07 * bidder.pressure_tolerance,
+        AuctionTemperature::FomoSpiral => 0.12 * bidder.pressure_tolerance,
+        AuctionTemperature::FinalCall => 0.16 * bidder.pressure_tolerance,
+    }
+}
+
+fn pressure_tolerance(bidder_type: BidderType, patience: f32) -> f32 {
+    let base = match bidder_type {
+        BidderType::FirstHomeBuyer => 0.70,
+        BidderType::Investor => 0.42,
+        BidderType::Renovator => 0.62,
+        BidderType::Developer => 0.78,
+        BidderType::EgoBidder => 0.92,
+        BidderType::BargainHunter => 0.34,
+    };
+    ((base + patience) * 0.5).clamp(0.20, 0.96)
+}
+
+fn overbid_tendency(bidder_type: BidderType, aggression: f32) -> f32 {
+    let base = match bidder_type {
+        BidderType::FirstHomeBuyer => 0.58,
+        BidderType::Investor => 0.22,
+        BidderType::Renovator => 0.46,
+        BidderType::Developer => 0.36,
+        BidderType::EgoBidder => 0.86,
+        BidderType::BargainHunter => 0.18,
+    };
+    ((base + aggression) * 0.5).clamp(0.05, 0.96)
+}
+
+fn stretch_increments(overbid_tendency: f32) -> i64 {
+    if overbid_tendency >= 0.72 {
+        2
+    } else {
+        1
+    }
+}
+
+fn bidder_preference(bidder_type: BidderType) -> &'static str {
+    match bidder_type {
+        BidderType::FirstHomeBuyer => "finished family appeal",
+        BidderType::Investor => "yield and margin",
+        BidderType::Renovator => "rough houses with upside",
+        BidderType::Developer => "large blocks",
+        BidderType::EgoBidder => "visible wins",
+        BidderType::BargainHunter => "quiet rooms",
+    }
+}
+
+fn bidder_weakness(bidder_type: BidderType) -> &'static str {
+    match bidder_type {
+        BidderType::FirstHomeBuyer => "stretches late",
+        BidderType::Investor => "will not chase emotion",
+        BidderType::Renovator => "underweights ugly defects",
+        BidderType::Developer => "ignores small blocks",
+        BidderType::EgoBidder => "takes counter-bids personally",
+        BidderType::BargainHunter => "folds once value buffer vanishes",
+    }
+}
+
+fn bidder_danger(bidder_type: BidderType) -> &'static str {
+    match bidder_type {
+        BidderType::FirstHomeBuyer => "strong on pretty homes",
+        BidderType::Investor => "accurate valuation",
+        BidderType::Renovator => "sees upside others fear",
+        BidderType::Developer => "can jump the price",
+        BidderType::EgoBidder => "creates FOMO",
+        BidderType::BargainHunter => "patient and hard to read",
+    }
+}
+
+fn bidding_rhythm(bidder_type: BidderType) -> &'static str {
+    match bidder_type {
+        BidderType::FirstHomeBuyer => "fast then anxious",
+        BidderType::Investor => "slow and measured",
+        BidderType::Renovator => "wakes up on defects",
+        BidderType::Developer => "jumps early",
+        BidderType::EgoBidder => "answers quickly",
+        BidderType::BargainHunter => "waits for weakness",
+    }
 }

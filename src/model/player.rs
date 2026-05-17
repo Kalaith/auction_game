@@ -1,4 +1,4 @@
-use crate::model::{ActiveRenovation, CompletedUpgrade, Property};
+use crate::model::{ActiveRenovation, CompletedUpgrade, Property, ResearchLevel, WalkawayStyle};
 
 #[derive(Clone, Debug)]
 pub struct Player {
@@ -27,6 +27,8 @@ pub struct OwnedProperty {
     pub deposit_paid: i64,
     pub debt: i64,
     pub walkaway_price: i64,
+    pub research_level: ResearchLevel,
+    pub walkaway_style: WalkawayStyle,
     pub weeks_held: u32,
     pub active_renovation: Option<ActiveRenovation>,
     pub upgrades: Vec<CompletedUpgrade>,
@@ -41,6 +43,8 @@ impl OwnedProperty {
         deposit_paid: i64,
         debt: i64,
         walkaway_price: i64,
+        research_level: ResearchLevel,
+        walkaway_style: WalkawayStyle,
     ) -> Self {
         let hidden_defect_discovered = property.hidden_defect_risk >= 0.28
             || (property.hidden_defect_risk >= 0.18 && property.id % 2 == 1);
@@ -51,6 +55,8 @@ impl OwnedProperty {
             deposit_paid,
             debt,
             walkaway_price,
+            research_level,
+            walkaway_style,
             weeks_held: 0,
             active_renovation: None,
             upgrades: Vec::new(),

@@ -1,4 +1,4 @@
-use crate::model::{Bidder, Property};
+use crate::model::{Bidder, Property, ResearchLevel, WalkawayStyle};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum BidderActor {
@@ -19,6 +19,43 @@ pub struct BidLog {
     pub seconds_remaining: f32,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AuctionTemperature {
+    QuietRoom,
+    SteadyInterest,
+    HeatingUp,
+    FomoSpiral,
+    FinalCall,
+}
+
+impl AuctionTemperature {
+    pub fn label(self) -> &'static str {
+        match self {
+            AuctionTemperature::QuietRoom => "Quiet Room",
+            AuctionTemperature::SteadyInterest => "Steady Interest",
+            AuctionTemperature::HeatingUp => "Heating Up",
+            AuctionTemperature::FomoSpiral => "FOMO Spiral",
+            AuctionTemperature::FinalCall => "Final Call",
+        }
+    }
+
+    pub fn description(self) -> &'static str {
+        match self {
+            AuctionTemperature::QuietRoom => {
+                "The room is cautious. Price discovery is still rational."
+            }
+            AuctionTemperature::SteadyInterest => "Bidders are engaged, but not yet panicked.",
+            AuctionTemperature::HeatingUp => {
+                "Competition is pulling attention away from the numbers."
+            }
+            AuctionTemperature::FomoSpiral => {
+                "Bidders are reacting emotionally. Good deals vanish quickly here."
+            }
+            AuctionTemperature::FinalCall => "Silence now decides the sale.",
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Auction {
     pub property: Property,
@@ -35,6 +72,10 @@ pub struct Auction {
     pub status: Option<AuctionStatus>,
     pub log: Vec<BidLog>,
     pub player_walkaway_price: i64,
+    pub player_research_level: ResearchLevel,
+    pub walkaway_style: WalkawayStyle,
+    pub temperature: AuctionTemperature,
+    pub market_heat: i32,
 }
 
 impl Auction {

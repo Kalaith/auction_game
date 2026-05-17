@@ -1,10 +1,13 @@
 use crate::app::{App, PurchaseDebrief};
-use crate::model::{Auction, AuctionStatus, BidderActor};
+use crate::model::{Auction, AuctionStatus, AuctionTemperature, BidderActor};
 use crate::screens::auction_widgets::{
     bid_verdict, draw_heat_bar, guidance_color, money_color, mood_color,
 };
 use crate::screens::Screen;
-use crate::sim::auction_sim::{place_player_bid, stop_player_bidding, AUCTION_DURATION_SECONDS};
+use crate::sim::auction_sim::{
+    hold_player_position, place_player_bid, quick_resolve_auction, room_read, stop_player_bidding,
+    AUCTION_DURATION_SECONDS,
+};
 use crate::sim::finance::{finance_snapshot, FinanceSnapshot};
 use crate::sim::valuation::{cash_needed_to_settle, projected_purchase_margin};
 use crate::ui::*;
@@ -14,6 +17,7 @@ enum AuctionUiAction {
     Bid,
     Hold,
     WalkAway,
+    QuickResolve,
     Settle,
     ReturnToListings,
 }
@@ -69,15 +73,34 @@ impl App {
                 }
             }
             Some(AuctionUiAction::Hold) => {
-                self.status = "You hold your line and let the room move first.".to_string();
+                if let Some(auction) = self.current_auction.as_mut() {
+                    let read = hold_player_position(auction);
+                    self.status = format!("Held position. {read}");
+                }
             }
             Some(AuctionUiAction::WalkAway) => {
                 if let Some(auction) = self.current_auction.as_mut() {
                     stop_player_bidding(auction);
                 }
             }
+            Some(AuctionUiAction::QuickResolve) => {
+                if let Some(auction) = self.current_auction.as_mut() {
+                    quick_resolve_auction(auction);
+                }
+            }
             Some(AuctionUiAction::Settle) => self.settle_purchase(),
             Some(AuctionUiAction::ReturnToListings) => {
+                if let Some(auction) = &self.current_auction {
+                    if matches!(auction.status, Some(AuctionStatus::SoldToNpc(_)))
+                        && auction.player_exit_bid.is_some()
+                        && auction.current_bid > auction.player_walkaway_price
+                    {
+                        self.player.reputation += 1;
+                        self.status =
+                            "Discipline reputation +1 for letting an overheated room win."
+                                .to_string();
+                    }
+                }
                 self.current_auction = None;
                 self.screen = Screen::PropertyList;
             }
@@ -250,16 +273,16 @@ fn draw_auction_property_panel(
     }
     let pressure = 100.0 - auction.seconds_remaining / AUCTION_DURATION_SECONDS * 100.0;
     draw_meter(
-        pressure_label(pressure),
+        auction.temperature.label(),
         pressure as i32,
         Rect::new(rect.x + 16.0, rect.y + rect.h - 58.0, rect.w - 32.0, 12.0),
-        pressure_color(pressure),
+        temperature_color(auction.temperature),
     );
     label(
-        "Patience protects margin.",
+        auction.temperature.description(),
         rect.x + 16.0,
         rect.y + rect.h - 18.0,
-        15,
+        14,
         TEXT_DIM,
     );
 }
@@ -274,24 +297,30 @@ fn draw_live_decision_panel(
     finance: FinanceSnapshot,
 ) -> Option<AuctionUiAction> {
     soft_panel(rect);
-    let pressure = 100.0 - auction.seconds_remaining / AUCTION_DURATION_SECONDS * 100.0;
     let over_plan = next_bid > auction.player_walkaway_price;
     let state_color = if over_plan {
         NEGATIVE
     } else {
-        pressure_color(pressure)
+        temperature_color(auction.temperature)
     };
     draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 2.0, state_color);
     label(
         if over_plan {
             "Over Plan"
         } else {
-            pressure_label(pressure)
+            auction.temperature.label()
         },
         rect.x + 26.0,
         rect.y + 38.0,
         22,
         state_color,
+    );
+    label(
+        auction.temperature.description(),
+        rect.x + 28.0,
+        rect.y + 66.0,
+        14,
+        TEXT_DIM,
     );
     label(
         &format!("{:02}s", auction.seconds_remaining.ceil() as i32),
@@ -376,9 +405,36 @@ fn draw_live_decision_panel(
         17,
         guidance_color(margin, cash_after, next_bid, auction.player_walkaway_price),
     );
+    label_fit(
+        &format!("Room read: {}", room_read(auction)),
+        rect.x + 54.0,
+        rect.y + 440.0,
+        rect.w - 108.0,
+        15,
+        TEXT_DIM,
+    );
+
+    if !auction.is_player_active {
+        label(
+            "You are out. Let the room finish without waiting.",
+            rect.x + 54.0,
+            rect.y + 450.0,
+            17,
+            TEXT_DIM,
+        );
+        if button(
+            Rect::new(rect.x + 38.0, rect.y + 476.0, rect.w - 76.0, 48.0),
+            "Quick Resolve",
+            true,
+            ButtonTone::Primary,
+        ) {
+            return Some(AuctionUiAction::QuickResolve);
+        }
+        return None;
+    }
 
     if button(
-        Rect::new(rect.x + 38.0, rect.y + 442.0, 205.0, 48.0),
+        Rect::new(rect.x + 38.0, rect.y + 468.0, 205.0, 48.0),
         "Hold Position",
         auction.is_player_active,
         ButtonTone::Secondary,
@@ -386,7 +442,7 @@ fn draw_live_decision_panel(
         return Some(AuctionUiAction::Hold);
     }
     if button(
-        Rect::new(rect.x + rect.w - 243.0, rect.y + 442.0, 205.0, 48.0),
+        Rect::new(rect.x + rect.w - 243.0, rect.y + 468.0, 205.0, 48.0),
         "Walk Away",
         auction.is_player_active,
         ButtonTone::Ghost,
@@ -419,10 +475,11 @@ fn draw_bidder_panel(rect: Rect, auction: &Auction) {
             18,
             TEXT_BRIGHT,
         );
-        label(
-            bidder.bidder_type.label(),
+        label_fit(
+            &format!("{} | {}", bidder.bidder_type.label(), bidder.rhythm),
             rect.x + 18.0,
             y + 22.0,
+            rect.w - 146.0,
             16,
             TEXT_DIM,
         );
@@ -446,9 +503,20 @@ fn draw_bidder_panel(rect: Rect, auction: &Auction) {
             Rect::new(rect.x + rect.w - 104.0, y - 7.0, 76.0, 8.0),
             bidder.heat,
         );
+        label_fit(
+            &format!(
+                "Tell: {} Prefers: {} Weakness: {} Danger: {}",
+                bidder.tell, bidder.preference, bidder.weakness, bidder.danger
+            ),
+            rect.x + 18.0,
+            y + 44.0,
+            rect.w - 36.0,
+            14,
+            mood_color(bidder.mood),
+        );
     }
 
-    label("Bid Log", rect.x + 18.0, rect.y + 298.0, 22, TEXT_BRIGHT);
+    label("Bid Log", rect.x + 18.0, rect.y + 318.0, 22, TEXT_BRIGHT);
     for (index, entry) in auction.log.iter().rev().take(4).enumerate() {
         let text = format!(
             "{:>2}s  {}",
@@ -458,7 +526,7 @@ fn draw_bidder_panel(rect: Rect, auction: &Auction) {
         label_fit(
             &text,
             rect.x + 18.0,
-            rect.y + 334.0 + index as f32 * 28.0,
+            rect.y + 354.0 + index as f32 * 28.0,
             rect.w - 36.0,
             15,
             TEXT_DIM,
@@ -482,22 +550,11 @@ fn short_log_line(text: &str) -> &str {
     }
 }
 
-fn pressure_label(pressure: f32) -> &'static str {
-    if pressure >= 88.0 {
-        "Final Call"
-    } else if pressure >= 60.0 {
-        "Heating Up"
-    } else {
-        "Calm"
-    }
-}
-
-fn pressure_color(pressure: f32) -> Color {
-    if pressure >= 88.0 {
-        NEGATIVE
-    } else if pressure >= 60.0 {
-        WARNING
-    } else {
-        POSITIVE
+fn temperature_color(temperature: AuctionTemperature) -> Color {
+    match temperature {
+        AuctionTemperature::QuietRoom => POSITIVE,
+        AuctionTemperature::SteadyInterest => crate::ui::BLUE,
+        AuctionTemperature::HeatingUp => WARNING,
+        AuctionTemperature::FomoSpiral | AuctionTemperature::FinalCall => NEGATIVE,
     }
 }

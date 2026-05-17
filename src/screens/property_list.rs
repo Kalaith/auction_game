@@ -197,17 +197,8 @@ fn demand_badge(property: &Property) -> &'static str {
 }
 
 fn reason_to_care(property: &Property, app: &App) -> &'static str {
-    if property.hidden_defect_risk >= 0.28 {
-        "Risky fixer"
-    } else if upside_amount(property, app) >= 95_000 {
-        "High upside"
-    } else if property.buyer_demand >= 70 {
-        "Family demand"
-    } else if property.guide_price <= 500_000 {
-        "Cheap entry"
-    } else {
-        "Steady play"
-    }
+    let _ = app;
+    property.deal_archetype.label()
 }
 
 fn verdict_color(property: &Property, app: &App) -> Color {

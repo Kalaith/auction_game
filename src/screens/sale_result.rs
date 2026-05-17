@@ -10,7 +10,7 @@ impl App {
             return;
         };
 
-        let rect = Rect::new(190.0, 104.0, ui_width() - 380.0, ui_height() - 154.0);
+        let rect = Rect::new(120.0, 86.0, ui_width() - 240.0, ui_height() - 126.0);
         soft_panel(rect);
         label("Sale Result", rect.x + 28.0, rect.y + 44.0, 31, TEXT_BRIGHT);
         label(
@@ -32,6 +32,18 @@ impl App {
             15,
             TEXT_DIM,
         );
+        label(
+            &format!(
+                "Highest bid {} | Demand {} / 100 | Cost base {}",
+                format_money(result.highest_bid),
+                result.demand_score,
+                format_money(result.total_costs)
+            ),
+            rect.x + 30.0,
+            rect.y + 118.0,
+            15,
+            TEXT_DIM,
+        );
 
         let sold_text = result
             .sale_price
@@ -40,7 +52,7 @@ impl App {
         label(
             &sold_text,
             rect.x + 30.0,
-            rect.y + 132.0,
+            rect.y + 148.0,
             35,
             if result.sale_price.is_some() {
                 ACCENT
@@ -51,7 +63,7 @@ impl App {
         label(
             &format!("Result {}", format_money(result.profit)),
             rect.x + 30.0,
-            rect.y + 182.0,
+            rect.y + 198.0,
             42,
             if result.profit >= 0 {
                 POSITIVE
@@ -64,65 +76,66 @@ impl App {
             label(
                 &format!("Over walk-away by {}", format_money(over_walkaway)),
                 rect.x + 30.0,
-                rect.y + 218.0,
+                rect.y + 232.0,
                 22,
                 NEGATIVE,
             );
         } else {
             draw_badge(
                 result_verdict(result.profit),
-                Rect::new(rect.x + 30.0, rect.y + 198.0, 128.0, 28.0),
+                Rect::new(rect.x + 30.0, rect.y + 216.0, 128.0, 28.0),
                 result_color(result.profit),
             );
         }
 
-        let breakdown = Rect::new(rect.x + 30.0, rect.y + 246.0, rect.w - 60.0, 148.0);
+        let breakdown = Rect::new(rect.x + 30.0, rect.y + 260.0, rect.w - 60.0, 172.0);
         dark_panel(breakdown);
         label(
-            "What Happened",
+            "Deal Autopsy",
             breakdown.x + 18.0,
             breakdown.y + 30.0,
             22,
             TEXT_BRIGHT,
         );
-        let sale_price = result.sale_price.unwrap_or(result.highest_bid);
-        let acquisition_costs = result.total_costs - result.selling_fees;
-        let before_fees = sale_price - acquisition_costs;
         let rows = [
-            ("Over walk-away", -over_walkaway),
-            ("Sale against cost base", before_fees),
-            ("Selling fees", -result.selling_fees),
-            ("Market heat", i64::from(result.demand_score)),
-            ("Final profit / loss", result.profit),
+            ("Purchase discipline", result.purchase_discipline.as_str()),
+            ("Research quality", result.research_quality.as_str()),
+            ("Renovation choice", result.renovation_choice.as_str()),
+            ("Sale timing", result.sale_timing.as_str()),
+            ("Reputation", result.reputation_reason.as_str()),
         ];
         for (index, (title, value)) in rows.iter().enumerate() {
-            let y = breakdown.y + 56.0 + index as f32 * 20.0;
+            let y = breakdown.y + 58.0 + index as f32 * 22.0;
             label(title, breakdown.x + 18.0, y, 16, TEXT_DIM);
-            let value_text = if *title == "Market heat" {
-                format!("{value} / 100")
-            } else {
-                format_money(*value)
-            };
-            let measured = measure_label(&value_text, 18);
-            label(
-                &value_text,
-                breakdown.x + breakdown.w - measured.width - 18.0,
+            label_fit(
+                value,
+                breakdown.x + 220.0,
                 y,
-                18,
-                if *value >= 0 { POSITIVE } else { NEGATIVE },
+                breakdown.w - 238.0,
+                16,
+                autopsy_color(value),
             );
         }
 
-        let lesson = Rect::new(rect.x + 30.0, rect.y + 414.0, rect.w - 60.0, 78.0);
+        let lesson = Rect::new(rect.x + 30.0, rect.y + 450.0, rect.w - 60.0, 96.0);
         soft_panel(lesson);
         label("Lesson", lesson.x + 18.0, lesson.y + 30.0, 22, TEXT_BRIGHT);
-        draw_wrapped_text(
+        let next_y = draw_wrapped_text(
             &result.lesson,
             lesson.x + 114.0,
             lesson.y + 30.0,
             lesson.w - 132.0,
-            18,
+            16,
             TEXT,
+        );
+        label("Next", lesson.x + 18.0, next_y + 4.0, 16, ACCENT);
+        draw_wrapped_text(
+            &result.next_time,
+            lesson.x + 114.0,
+            next_y + 4.0,
+            lesson.w - 132.0,
+            16,
+            ACCENT,
         );
 
         let continue_label = if result.sale_price.is_some() {
@@ -131,7 +144,7 @@ impl App {
             "Back To Portfolio"
         };
         if button(
-            Rect::new(rect.x + rect.w - 208.0, rect.y + rect.h - 58.0, 178.0, 40.0),
+            Rect::new(rect.x + rect.w - 208.0, rect.y + 24.0, 178.0, 40.0),
             continue_label,
             true,
             ButtonTone::Primary,
@@ -165,5 +178,27 @@ fn result_color(profit: i64) -> Color {
         WARNING
     } else {
         NEGATIVE
+    }
+}
+
+fn autopsy_color(text: &str) -> Color {
+    if text.starts_with("Failed")
+        || text.starts_with("Weak")
+        || text.starts_with("Wrong tool")
+        || text.starts_with("Poor")
+        || text.starts_with("Late")
+        || text.starts_with("Stretched")
+        || text.starts_with("-")
+    {
+        NEGATIVE
+    } else if text.starts_with("Thin")
+        || text.starts_with("Partial")
+        || text.starts_with("Risky")
+        || text.starts_with("Neutral")
+        || text.starts_with("No reputation")
+    {
+        WARNING
+    } else {
+        POSITIVE
     }
 }

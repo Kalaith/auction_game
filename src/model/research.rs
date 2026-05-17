@@ -60,6 +60,39 @@ impl ResearchLevel {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum WalkawayStyle {
+    Conservative,
+    Balanced,
+    Aggressive,
+}
+
+impl WalkawayStyle {
+    pub fn label(self) -> &'static str {
+        match self {
+            WalkawayStyle::Conservative => "Conservative",
+            WalkawayStyle::Balanced => "Balanced",
+            WalkawayStyle::Aggressive => "Aggressive",
+        }
+    }
+
+    pub fn description(self) -> &'static str {
+        match self {
+            WalkawayStyle::Conservative => "Protects margin. May miss good deals.",
+            WalkawayStyle::Balanced => "Default investor discipline.",
+            WalkawayStyle::Aggressive => "Chases upside. Easier to overpay.",
+        }
+    }
+
+    pub fn buffer_adjustment(self) -> i64 {
+        match self {
+            WalkawayStyle::Conservative => 24_000,
+            WalkawayStyle::Balanced => 0,
+            WalkawayStyle::Aggressive => -22_000,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct ResearchReport {
     pub level: ResearchLevel,

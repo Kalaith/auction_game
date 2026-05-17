@@ -1,7 +1,7 @@
 use crate::app::App;
 use crate::model::{ActiveRenovation, ContractorTier, OwnedProperty, UpgradeData};
 use crate::screens::Screen;
-use crate::sim::renovation::{quote_renovation, RenovationQuote};
+use crate::sim::renovation::{diagnose_property, quote_renovation, RenovationQuote};
 use crate::sim::sale_sim::ReserveChoice;
 use crate::ui::*;
 use macroquad::prelude::*;
@@ -34,9 +34,15 @@ pub(super) fn draw_empty_portfolio(app: &mut App) {
     }
 }
 
-pub(super) fn draw_problem_card(rect: Rect, owned: &OwnedProperty, bank_room: i64) {
+pub(super) fn draw_problem_card(
+    rect: Rect,
+    owned: &OwnedProperty,
+    bank_room: i64,
+    market: &crate::model::MarketEvent,
+) {
     dark_panel(rect);
-    label("Problem", rect.x + 16.0, rect.y + 30.0, 22, TEXT_BRIGHT);
+    label("Diagnosis", rect.x + 16.0, rect.y + 30.0, 22, TEXT_BRIGHT);
+    let diagnosis = diagnose_property(owned, market);
     let (summary, color) = if let Some(project) = &owned.active_renovation {
         (
             format!(
@@ -45,23 +51,15 @@ pub(super) fn draw_problem_card(rect: Rect, owned: &OwnedProperty, bank_room: i6
             ),
             WARNING,
         )
-    } else if owned.hidden_defect_discovered && !owned.has_defect_repair() {
-        (
-            "Structural concern found. Buyers will punish this unless repaired.".to_string(),
-            NEGATIVE,
-        )
-    } else if owned.hidden_defect_discovered {
-        (
-            "Major defect handled. Presentation now matters more than fear.".to_string(),
-            POSITIVE,
-        )
     } else {
-        (
-            "No major hidden defect surfaced yet. Keep margin for surprises.".to_string(),
-            WARNING,
-        )
+        let color = if diagnosis.is_warning {
+            WARNING
+        } else {
+            POSITIVE
+        };
+        (diagnosis.summary.clone(), color)
     };
-    draw_wrapped_text(
+    label_fit(
         &summary,
         rect.x + 16.0,
         rect.y + 62.0,
@@ -72,7 +70,7 @@ pub(super) fn draw_problem_card(rect: Rect, owned: &OwnedProperty, bank_room: i6
     let detail = owned.active_renovation.as_ref().map_or_else(
         || {
             owned.upgrades.last().map_or_else(
-                || format!("Bank room {}", format_money(bank_room)),
+                || format!("Best move: {}", diagnosis.best_move),
                 |last| {
                     format!(
                         "Last: {} by {} contractor, {}w. {}",
@@ -92,10 +90,10 @@ pub(super) fn draw_problem_card(rect: Rect, owned: &OwnedProperty, bank_room: i6
             )
         },
     );
-    draw_wrapped_text(
+    label_fit(
         &detail,
         rect.x + 16.0,
-        rect.y + 112.0,
+        rect.y + 96.0,
         rect.w - 32.0,
         15,
         if bank_room >= 80_000 {
@@ -177,7 +175,7 @@ pub(super) fn draw_upgrade_decision(
         21,
         TEXT_BRIGHT,
     );
-    draw_wrapped_text(
+    label_fit(
         quote.warning.as_str(),
         rect.x + 16.0,
         rect.y + 58.0,
@@ -191,12 +189,27 @@ pub(super) fn draw_upgrade_decision(
     );
     label(
         &format!(
+            "{} | net {}",
+            quote.verdict.label(),
+            format_money(quote.net_effect)
+        ),
+        rect.x + 16.0,
+        rect.y + 98.0,
+        16,
+        if quote.net_effect >= 0 {
+            POSITIVE
+        } else {
+            WARNING
+        },
+    );
+    label(
+        &format!(
             "Start {} | +{} value",
             format_money(quote.total_cost),
             format_money(quote.value_boost)
         ),
         rect.x + 16.0,
-        rect.y + 104.0,
+        rect.y + 120.0,
         17,
         TEXT,
     );
@@ -207,7 +220,7 @@ pub(super) fn draw_upgrade_decision(
             format_money(quote.total_cost + quote.holding_cost)
         ),
         rect.x + 16.0,
-        rect.y + 126.0,
+        rect.y + 142.0,
         15,
         if quote.permit_risk > 0 {
             WARNING
@@ -339,24 +352,23 @@ pub(super) fn recommended_upgrade<'a>(
     app: &'a App,
     owned: &OwnedProperty,
 ) -> Option<(&'a UpgradeData, RenovationQuote)> {
-    let target = if owned.hidden_defect_discovered && !owned.has_defect_repair() {
-        "structural_repair"
-    } else if !owned.has_upgrade("paint_clean") {
-        "paint_clean"
-    } else if !owned.has_upgrade("staging") {
-        "staging"
-    } else {
-        "landscaping"
-    };
-    let upgrade = app
-        .data
+    app.data
         .upgrades
         .iter()
-        .find(|upgrade| upgrade.id == target)?;
-    Some((
-        upgrade,
-        quote_renovation(owned, upgrade, app.selected_contractor, app.market()),
-    ))
+        .filter(|upgrade| !owned.has_upgrade(&upgrade.id) && !owned.has_active_upgrade(&upgrade.id))
+        .map(|upgrade| {
+            let quote = quote_renovation(
+                owned,
+                upgrade,
+                app.selected_contractor,
+                app.market(),
+                app.player.reputation,
+            );
+            let score = treatment_score(owned, upgrade, &quote);
+            (upgrade, quote, score)
+        })
+        .max_by_key(|(_, _, score)| *score)
+        .map(|(upgrade, quote, _)| (upgrade, quote))
 }
 
 pub(super) fn draw_contractor_selector(app: &mut App, main: Rect, locked: bool) {
@@ -409,4 +421,78 @@ fn project_status(project: &ActiveRenovation) -> String {
     } else {
         project.contractor.label().to_string()
     }
+}
+
+fn treatment_score(owned: &OwnedProperty, upgrade: &UpgradeData, quote: &RenovationQuote) -> i64 {
+    let mut score = quote.net_effect / 1_000;
+
+    if owned.hidden_defect_discovered && !owned.has_defect_repair() {
+        score += if upgrade.removes_defect { 120 } else { -55 };
+    }
+    if owned.purchase_price > owned.walkaway_price
+        && upgrade.cost >= 20_000
+        && !upgrade.removes_defect
+    {
+        score -= 45;
+    }
+
+    match owned.property.deal_archetype {
+        crate::model::DealArchetype::RiskyFixer => {
+            if upgrade.removes_defect {
+                score += 70;
+            }
+            if matches!(upgrade.id.as_str(), "kitchen_refresh" | "bathroom_upgrade") {
+                score -= 35;
+            }
+        }
+        crate::model::DealArchetype::PrettyTrap => {
+            if matches!(upgrade.id.as_str(), "paint_clean" | "staging") {
+                score += 25;
+            }
+            if matches!(upgrade.id.as_str(), "kitchen_refresh" | "bathroom_upgrade") {
+                score -= 70;
+            }
+        }
+        crate::model::DealArchetype::LandValuePlay => {
+            if upgrade.id == "landscaping" {
+                score += 40;
+            }
+            if matches!(upgrade.id.as_str(), "kitchen_refresh" | "staging") {
+                score -= 45;
+            }
+        }
+        crate::model::DealArchetype::HotSuburbFomo => {
+            if upgrade.id == "staging" {
+                score += 45;
+            }
+        }
+        crate::model::DealArchetype::QuietBargain => {
+            if matches!(upgrade.id.as_str(), "paint_clean" | "staging") {
+                score += 35;
+            }
+            if upgrade.cost >= 20_000 {
+                score -= 40;
+            }
+        }
+        crate::model::DealArchetype::RenovatorBait => {
+            if upgrade.cost >= 20_000 {
+                score -= 35;
+            }
+        }
+        crate::model::DealArchetype::RentalHold => {
+            if upgrade.removes_defect {
+                score += 35;
+            }
+            if upgrade.id == "staging" {
+                score -= 25;
+            }
+        }
+        crate::model::DealArchetype::AuctionTrap => {
+            if upgrade.cost >= 20_000 {
+                score -= 55;
+            }
+        }
+    }
+
+    score
 }

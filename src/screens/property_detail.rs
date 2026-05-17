@@ -1,10 +1,11 @@
 use crate::app::App;
-use crate::model::{Property, ResearchLevel};
+use crate::model::{Property, ResearchLevel, WalkawayStyle};
 use crate::screens::Screen;
 use crate::sim::finance::finance_snapshot;
 use crate::sim::research::{
-    comparable_sale_value, due_diligence_note, recommended_walkaway, researched_value_range,
-    risk_summary,
+    comparable_sale_value, due_diligence_note, estimate_reserve, recommended_walkaway,
+    research_cost, research_fit_summary, research_question, research_takeaway,
+    researched_value_range, risk_summary,
 };
 use crate::sim::valuation::{cash_needed_to_settle, projected_purchase_margin};
 use crate::ui::*;
@@ -57,6 +58,14 @@ impl App {
             Rect::new(hero.x + 232.0, hero.y + 236.0, 128.0, 26.0),
             crate::ui::BLUE,
         );
+        label_fit(
+            &property.notes,
+            hero.x + 18.0,
+            hero.y + 276.0,
+            hero.w - 36.0,
+            13,
+            TEXT_DIM,
+        );
 
         let decision = Rect::new(552.0, 122.0, ui_width() - 580.0, 352.0);
         soft_panel(decision);
@@ -71,8 +80,8 @@ impl App {
             );
             if button(
                 button_rect,
-                research_button_label(*level),
-                self.player.cash >= level.cost(),
+                &research_button_label(*level, self.player.reputation),
+                self.player.cash >= research_cost(*level, self.player.reputation),
                 ButtonTone::Secondary,
             ) {
                 research_action = Some(*level);
@@ -90,18 +99,34 @@ impl App {
 }
 
 fn draw_detail_summary(app: &App, rect: Rect, property: &Property, research_level: ResearchLevel) {
-    let (low, high) = researched_value_range(property, app.market(), research_level);
-    let walkaway = recommended_walkaway(property, app.market(), research_level);
+    let (low, high) = researched_value_range(
+        property,
+        app.market(),
+        research_level,
+        app.player.reputation,
+    );
+    let walkaway = recommended_walkaway(
+        property,
+        app.market(),
+        research_level,
+        app.walkaway_style,
+        app.player.reputation,
+    );
     let margin = projected_purchase_margin(property, walkaway, app.market());
 
     draw_badge(
-        upside_badge(property),
+        property.deal_archetype.label(),
         Rect::new(rect.x + 22.0, rect.y + 20.0, 128.0, 28.0),
+        ACCENT,
+    );
+    draw_badge(
+        upside_badge(property),
+        Rect::new(rect.x + 162.0, rect.y + 20.0, 118.0, 28.0),
         POSITIVE,
     );
     draw_badge(
         demand_badge(property),
-        Rect::new(rect.x + 162.0, rect.y + 20.0, 118.0, 28.0),
+        Rect::new(rect.x + 292.0, rect.y + 20.0, 118.0, 28.0),
         crate::ui::BLUE,
     );
 
@@ -138,88 +163,187 @@ fn draw_detail_summary(app: &App, rect: Rect, property: &Property, research_leve
         14,
         TEXT_DIM,
     );
+    label(
+        &format!(
+            "Reserve read: {}",
+            format_money(estimate_reserve(
+                property,
+                app.market(),
+                research_level,
+                app.player.reputation
+            ))
+        ),
+        rect.x + 22.0,
+        rect.y + 226.0,
+        14,
+        TEXT_DIM,
+    );
 
     label(
         "Recommended Walk-away",
         rect.x + 22.0,
-        rect.y + 226.0,
+        rect.y + 250.0,
         16,
         TEXT_DIM,
     );
     label(
         &format_money(walkaway),
         rect.x + 22.0,
-        rect.y + 258.0,
+        rect.y + 282.0,
         30,
         if margin >= 0 { POSITIVE } else { WARNING },
     );
     label(
-        &format!("Projected margin: {}", format_money(margin)),
+        &format!(
+            "{} plan | Projected margin: {}",
+            app.walkaway_style.label(),
+            format_money(margin)
+        ),
         rect.x + 22.0,
-        rect.y + 286.0,
+        rect.y + 308.0,
         16,
         if margin >= 0 { POSITIVE } else { WARNING },
     );
 
-    let risk = Rect::new(rect.x + rect.w - 286.0, rect.y + 74.0, 260.0, 190.0);
-    dark_panel(risk);
-    label("Risk Read", risk.x + 16.0, risk.y + 30.0, 21, TEXT_BRIGHT);
-    let mut y = draw_wrapped_text(
-        &risk_summary(property, research_level),
-        risk.x + 16.0,
-        risk.y + 62.0,
-        risk.w - 32.0,
-        16,
-        risk_color(property, research_level),
+    let thesis = Rect::new(rect.x + rect.w - 286.0, rect.y + 62.0, 260.0, 118.0);
+    dark_panel(thesis);
+    label(
+        "Deal Thesis",
+        thesis.x + 16.0,
+        thesis.y + 28.0,
+        20,
+        TEXT_BRIGHT,
     );
-    y += 4.0;
-    y = draw_wrapped_text(
-        due_diligence_note(property, research_level),
-        risk.x + 16.0,
-        y,
-        risk.w - 32.0,
+    label_fit(
+        &property.thesis,
+        thesis.x + 16.0,
+        thesis.y + 56.0,
+        thesis.w - 32.0,
         15,
+        TEXT,
+    );
+    label_fit(
+        &format!("Risk: {}", property.main_risk),
+        thesis.x + 16.0,
+        thesis.y + 80.0,
+        thesis.w - 32.0,
+        14,
+        WARNING,
+    );
+    label_fit(
+        &format!("Trap: {}", property.bad_strategy),
+        thesis.x + 16.0,
+        thesis.y + 102.0,
+        thesis.w - 32.0,
+        14,
         TEXT_DIM,
     );
-    if y < risk.y + risk.h - 18.0 {
-        label_fit(
-            &property.notes,
-            risk.x + 16.0,
-            y + 2.0,
-            risk.w - 32.0,
-            13,
-            TEXT_DIM,
-        );
-    }
+
+    let risk = Rect::new(rect.x + rect.w - 286.0, rect.y + 194.0, 260.0, 102.0);
+    dark_panel(risk);
+    label(
+        "Due Diligence",
+        risk.x + 16.0,
+        risk.y + 28.0,
+        20,
+        TEXT_BRIGHT,
+    );
+    label_fit(
+        research_question(research_level),
+        risk.x + 16.0,
+        risk.y + 54.0,
+        risk.w - 32.0,
+        14,
+        crate::ui::BLUE,
+    );
+    label_fit(
+        research_fit_summary(property, research_level),
+        risk.x + 16.0,
+        risk.y + 74.0,
+        risk.w - 32.0,
+        14,
+        risk_color(property, research_level),
+    );
+    let takeaway = format!(
+        "{} {} {}",
+        risk_summary(property, research_level),
+        research_takeaway(property, app.market(), research_level),
+        due_diligence_note(property, research_level)
+    );
+    label_fit(
+        &takeaway,
+        risk.x + 16.0,
+        risk.y + 94.0,
+        risk.w - 32.0,
+        13,
+        TEXT_DIM,
+    );
 }
 
 fn draw_walkaway_panel(app: &mut App, rect: Rect, property: &Property) {
     let margin = projected_purchase_margin(property, app.walkaway_price, app.market());
     let finance = finance_snapshot(&app.player, app.market(), app.walkaway_price);
     label(
-        "Walk-away Price",
+        "Walk-away Strategy",
         rect.x + 18.0,
         rect.y + 30.0,
         23,
         TEXT_BRIGHT,
     );
+    let styles = [
+        WalkawayStyle::Conservative,
+        WalkawayStyle::Balanced,
+        WalkawayStyle::Aggressive,
+    ];
+    for (index, style) in styles.iter().enumerate() {
+        let selected = app.walkaway_style == *style;
+        if button(
+            Rect::new(
+                rect.x + 18.0 + index as f32 * 112.0,
+                rect.y + 42.0,
+                102.0,
+                28.0,
+            ),
+            style.label(),
+            true,
+            if selected {
+                ButtonTone::Primary
+            } else {
+                ButtonTone::Ghost
+            },
+        ) {
+            app.walkaway_style = *style;
+            app.walkaway_price = recommended_walkaway(
+                property,
+                app.market(),
+                app.research_level(property.id),
+                app.walkaway_style,
+                app.player.reputation,
+            );
+            app.status = format!(
+                "{} walk-away selected: {}",
+                style.label(),
+                style.description()
+            );
+        }
+    }
     label(
-        "This is your line in the sand.",
+        app.walkaway_style.description(),
         rect.x + 18.0,
-        rect.y + 56.0,
-        16,
+        rect.y + 84.0,
+        14,
         TEXT_DIM,
     );
     label(
         &format_money(app.walkaway_price),
-        rect.x + 292.0,
+        rect.x + 386.0,
         rect.y + 52.0,
         34,
         if margin >= 0 { POSITIVE } else { WARNING },
     );
     label(
         walkaway_verdict(margin),
-        rect.x + 512.0,
+        rect.x + 600.0,
         rect.y + 48.0,
         19,
         if margin >= 0 { POSITIVE } else { WARNING },
@@ -231,17 +355,11 @@ fn draw_walkaway_panel(app: &mut App, rect: Rect, property: &Property) {
             format_money(margin),
             format_money(finance.headroom_after)
         ),
-        rect.x + 292.0,
+        rect.x + 386.0,
         rect.y + 76.0,
         16,
         TEXT_DIM,
     );
-    draw_badge(
-        finance.stress.label(),
-        Rect::new(rect.x + 640.0, rect.y + 26.0, 112.0, 24.0),
-        finance_color(finance.stress),
-    );
-
     if button(
         Rect::new(rect.x + rect.w - 392.0, rect.y + 24.0, 74.0, 40.0),
         "-10k",
@@ -268,14 +386,6 @@ fn draw_walkaway_panel(app: &mut App, rect: Rect, property: &Property) {
     }
 }
 
-fn finance_color(stress: crate::sim::finance::FinanceStress) -> Color {
-    match stress {
-        crate::sim::finance::FinanceStress::Healthy => POSITIVE,
-        crate::sim::finance::FinanceStress::Tight => WARNING,
-        crate::sim::finance::FinanceStress::Maxed => NEGATIVE,
-    }
-}
-
 fn walkaway_verdict(margin: i64) -> &'static str {
     if margin >= 45_000 {
         "Safe bid plan"
@@ -286,12 +396,25 @@ fn walkaway_verdict(margin: i64) -> &'static str {
     }
 }
 
-fn research_button_label(level: ResearchLevel) -> &'static str {
+fn research_button_label(level: ResearchLevel, reputation: i32) -> String {
     match level {
-        ResearchLevel::StreetScan => "Street $0",
-        ResearchLevel::AgentPack => "Agent $1.5k",
-        ResearchLevel::BuildingInspection => "Build $3.5k",
-        ResearchLevel::FullDiligence => "Full $6k",
+        ResearchLevel::StreetScan => "Street $0".to_string(),
+        ResearchLevel::AgentPack => format!(
+            "Agent {}",
+            format_compact_money(research_cost(level, reputation))
+        ),
+        ResearchLevel::BuildingInspection => {
+            format!(
+                "Build {}",
+                format_compact_money(research_cost(level, reputation))
+            )
+        }
+        ResearchLevel::FullDiligence => {
+            format!(
+                "Full {}",
+                format_compact_money(research_cost(level, reputation))
+            )
+        }
     }
 }
 

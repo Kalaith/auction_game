@@ -92,6 +92,7 @@ mod tests {
             suburb_modifiers: HashMap::new(),
             renovator_modifier: 0.0,
             buyer_budget_modifier: budget_modifier,
+            strategy_effect: "Test strategy effect".to_string(),
         }
     }
 

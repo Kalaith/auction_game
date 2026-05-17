@@ -1,7 +1,7 @@
 use crate::data::GameData;
 use crate::model::{
     AuctionStatus, CampaignStatus, ContractorTier, OwnedProperty, Player, Property, PropertyId,
-    ResearchLevel, ResearchReport,
+    ResearchLevel, ResearchReport, WalkawayStyle,
 };
 use crate::screens::Screen;
 use crate::sim::auction_sim::{create_auction, update_auction};
@@ -12,7 +12,7 @@ use crate::sim::finance::finance_snapshot;
 use crate::sim::renovation::{
     progress_player_renovations, quote_renovation, start_upgrade_project,
 };
-use crate::sim::research::recommended_walkaway;
+use crate::sim::research::{recommended_walkaway, research_cost};
 use crate::sim::sale_sim::{simulate_sale, ReserveChoice, SaleResult};
 use crate::sim::valuation::{
     cash_needed_to_settle, deposit, market_adjusted_value, net_worth, purchase_fees, sale_fees,
@@ -50,6 +50,7 @@ pub struct App {
     pub(crate) campaign_status: CampaignStatus,
     pub(crate) listing_filter: usize,
     pub(crate) walkaway_price: i64,
+    pub(crate) walkaway_style: WalkawayStyle,
     pub(crate) status: String,
 }
 
@@ -71,6 +72,7 @@ impl App {
             campaign_status: CampaignStatus::Active,
             listing_filter: 0,
             walkaway_price: 600_000,
+            walkaway_style: WalkawayStyle::Balanced,
             status: "Read the market, pick a property, and keep your margin alive.".to_string(),
         };
         app.refresh_available_properties();
@@ -170,8 +172,13 @@ impl App {
 
     pub(crate) fn open_property_detail(&mut self, index: usize) {
         if let Some(property) = self.available_properties.get(index) {
-            self.walkaway_price =
-                recommended_walkaway(property, self.market(), self.research_level(property.id));
+            self.walkaway_price = recommended_walkaway(
+                property,
+                self.market(),
+                self.research_level(property.id),
+                self.walkaway_style,
+                self.player.reputation,
+            );
             self.screen = Screen::PropertyDetail(index);
         }
     }
@@ -182,7 +189,7 @@ impl App {
             return;
         }
 
-        let cost = level.cost();
+        let cost = research_cost(level, self.player.reputation);
         if self.player.cash < cost {
             self.status = format!("Need {} for {}.", format_money(cost), level.label());
             return;
@@ -200,7 +207,13 @@ impl App {
         self.player.cash -= cost;
         self.research_reports
             .insert(property_id, ResearchReport { level });
-        self.walkaway_price = recommended_walkaway(&property, self.market(), level);
+        self.walkaway_price = recommended_walkaway(
+            &property,
+            self.market(),
+            level,
+            self.walkaway_style,
+            self.player.reputation,
+        );
         self.status = format!(
             "{} complete for {}. Walk-away updated to {}.",
             level.label(),
@@ -223,6 +236,8 @@ impl App {
             self.market(),
             &self.data.bidder_profiles,
             self.walkaway_price,
+            self.research_level(property.id),
+            self.walkaway_style,
         ));
         self.purchase_debrief = None;
         self.screen = Screen::Auction;
@@ -263,6 +278,8 @@ impl App {
             deposit_paid,
             property_debt,
             auction.player_walkaway_price,
+            auction.player_research_level,
+            auction.walkaway_style,
         );
         self.purchase_debrief = Some(debrief);
         self.player.properties.push(owned);
@@ -305,6 +322,7 @@ impl App {
             upgrade,
             self.selected_contractor,
             self.market(),
+            self.player.reputation,
         );
         if self.player.cash < quote.total_cost {
             self.status = "Not enough cash to start that renovation.".to_string();
@@ -312,7 +330,7 @@ impl App {
         }
 
         self.player.cash -= quote.total_cost;
-        let project = start_upgrade_project(&quote, self.week);
+        let project = start_upgrade_project(&quote, self.week, self.player.reputation);
         self.player.properties[index].active_renovation = Some(project.clone());
         self.status = format!(
             "{} started: {} week job, {} paid. Advance weeks to finish.",
@@ -341,13 +359,14 @@ impl App {
         if let Some(sale_price) = result.sale_price {
             self.player.cash += sale_price - result.selling_fees - owned.debt;
             self.player.debt -= owned.debt;
-            self.player.reputation += if result.profit >= 0 { 1 } else { -1 };
+            self.player.reputation += result.reputation_delta;
             self.player.properties.remove(index);
             self.status = format!(
-                "{} sale complete with {} {}.",
+                "{} sale complete with {} {}. {}",
                 choice.label(),
                 if result.profit >= 0 { "profit" } else { "loss" },
-                format_money(result.profit.abs())
+                format_money(result.profit.abs()),
+                result.reputation_reason
             );
         } else {
             let holding = self.player.properties[index].property.holding_cost_per_week;
@@ -383,6 +402,14 @@ impl App {
             crate::model::Condition::Solid => 9_000,
             crate::model::Condition::Premium => 4_000,
         };
+        let renovation_allowance = match auction.property.deal_archetype {
+            crate::model::DealArchetype::RiskyFixer => renovation_allowance + 18_000,
+            crate::model::DealArchetype::RenovatorBait => renovation_allowance + 12_000,
+            crate::model::DealArchetype::PrettyTrap => renovation_allowance + 8_000,
+            crate::model::DealArchetype::LandValuePlay => renovation_allowance - 6_000,
+            _ => renovation_allowance,
+        }
+        .max(0);
         let projected_profit = estimated_resale - auction.current_bid - fees - renovation_allowance;
         let lesson = if walkaway_delta > 0 {
             "You won, but above your own walk-away line. That does not make the deal wrong, but it means the resale has less room to disappoint."

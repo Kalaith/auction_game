@@ -8,6 +8,7 @@ pub struct MarketEvent {
     pub suburb_modifiers: HashMap<String, f32>,
     pub renovator_modifier: f32,
     pub buyer_budget_modifier: f32,
+    pub strategy_effect: String,
 }
 
 impl MarketEvent {

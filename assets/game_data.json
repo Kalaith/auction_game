@@ -16,6 +16,11 @@
       "hidden_defect_risk": 0.18,
       "holding_cost_per_week": 720,
       "buyer_demand": 71,
+      "deal_archetype": "hot_suburb_fomo",
+      "thesis": "School-zone demand should support resale, but the room may price in the upside before you own it.",
+      "main_risk": "Family buyers push the auction beyond the renovation margin.",
+      "best_strategy": "Use agent comps, set a disciplined cap, and only renovate presentation items.",
+      "bad_strategy": "Keep bidding because Northbank feels safe.",
       "notes": "School-zone cottage with dated interiors and a deep back yard."
     },
     {
@@ -34,6 +39,11 @@
       "hidden_defect_risk": 0.34,
       "holding_cost_per_week": 650,
       "buyer_demand": 56,
+      "deal_archetype": "land_value_play",
+      "thesis": "Cheap because it presents badly, but the large block gives the deal a second way to work.",
+      "main_risk": "A structural defect turns the cheap entry into an expensive rescue.",
+      "best_strategy": "Inspect deeply, cap the bid hard, and repair only if the defect is confirmed.",
+      "bad_strategy": "Overbid because the guide looks low.",
       "notes": "Large block, poor presentation, and serious upside if defects stay manageable."
     },
     {
@@ -52,6 +62,11 @@
       "hidden_defect_risk": 0.08,
       "holding_cost_per_week": 820,
       "buyer_demand": 76,
+      "deal_archetype": "pretty_trap",
+      "thesis": "The house looks easy, but the safety premium leaves little room after fees.",
+      "main_risk": "You pay full retail for a property with limited upside.",
+      "best_strategy": "Buy only below fair value and avoid cosmetic spending that buyers already expect.",
+      "bad_strategy": "Mistake low defect risk for a guaranteed profit.",
       "notes": "Move-in ready family home with less upside but fewer nasty surprises."
     },
     {
@@ -70,6 +85,11 @@
       "hidden_defect_risk": 0.29,
       "holding_cost_per_week": 510,
       "buyer_demand": 48,
+      "deal_archetype": "risky_fixer",
+      "thesis": "Cheap entry and low holding costs help, but the repair bill decides the deal.",
+      "main_risk": "Defects consume the whole discount before resale demand arrives.",
+      "best_strategy": "Buy only with a repair allowance and sell quickly if the defect is real.",
+      "bad_strategy": "Treat renovation potential as profit before pricing the damage.",
       "notes": "Entry-level renovator with cheap holding costs and weak buyer emotion."
     },
     {
@@ -88,6 +108,11 @@
       "hidden_defect_risk": 0.05,
       "holding_cost_per_week": 1040,
       "buyer_demand": 82,
+      "deal_archetype": "pretty_trap",
+      "thesis": "High appeal attracts bidders, but the price already captures most of the good news.",
+      "main_risk": "Premium holding costs punish a slow resale.",
+      "best_strategy": "Only bid if the room stays cool and sell with a conservative reserve.",
+      "bad_strategy": "Pay extra because the house feels finished.",
       "notes": "High appeal, high price, and limited room for a quick flip margin."
     },
     {
@@ -106,6 +131,11 @@
       "hidden_defect_risk": 0.21,
       "holding_cost_per_week": 590,
       "buyer_demand": 53,
+      "deal_archetype": "quiet_bargain",
+      "thesis": "Patchy demand keeps bidders cautious, while transport links give the numbers quiet support.",
+      "main_risk": "The market stays lukewarm after you spend money improving it.",
+      "best_strategy": "Use modest upgrades and buy below reserve-pressure pricing.",
+      "bad_strategy": "Ignore it because the room is not excited.",
       "notes": "Industrial-edge suburb with improving transport links and patchy demand."
     }
   ],
@@ -229,7 +259,8 @@
         "Eastvale": 0.02
       },
       "renovator_modifier": 0.04,
-      "buyer_budget_modifier": 0.01
+      "buyer_budget_modifier": 0.01,
+      "strategy_effect": "Hot family demand rewards clean exits, but auction rooms will stretch faster than spreadsheets."
     },
     {
       "title": "Week 2 Market News",
@@ -244,7 +275,8 @@
         "Southmere": -0.02
       },
       "renovator_modifier": -0.01,
-      "buyer_budget_modifier": -0.04
+      "buyer_budget_modifier": -0.04,
+      "strategy_effect": "Higher borrowing stress favours cheaper entries, larger buffers, and walking away early."
     },
     {
       "title": "Week 3 Market News",
@@ -259,7 +291,8 @@
         "Southmere": 0.02
       },
       "renovator_modifier": 0.03,
-      "buyer_budget_modifier": 0.00
+      "buyer_budget_modifier": 0.00,
+      "strategy_effect": "Cosmetic improvements can work, but premium homes need sharper purchase discipline."
     }
   ]
 }

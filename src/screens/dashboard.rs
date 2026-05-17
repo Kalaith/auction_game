@@ -74,29 +74,30 @@ impl App {
         let card_w = (width - gap * 3.0) / 4.0;
         let progress = net_worth_value as f32 / CAMPAIGN_GOAL_NET_WORTH as f32;
         let buying_power = max_financeable_bid(&self.player, self.market());
+        let reputation_note = format!("Rep {:+}", self.player.reputation);
         let stats = [
             (
                 "Cash",
                 format_compact_money(self.player.cash),
-                "Ready capital",
+                "Ready capital".to_string(),
                 POSITIVE,
             ),
             (
                 "Buying Power",
                 format_compact_money(buying_power),
-                "Max next bid",
+                "Max next bid".to_string(),
                 POSITIVE,
             ),
             (
                 "Goal",
                 format!("{:.0}%", progress.clamp(0.0, 1.0) * 100.0),
-                "To $1.0m",
+                "To $1.0m".to_string(),
                 ACCENT,
             ),
             (
                 "Net Worth",
                 format_compact_money(net_worth_value),
-                "After debt",
+                reputation_note,
                 crate::ui::BLUE,
             ),
         ];
@@ -131,12 +132,20 @@ impl App {
         );
 
         for (index, item) in self.market().items.iter().take(2).enumerate() {
-            let y = rect.y + 64.0 + index as f32 * 30.0;
+            let y = rect.y + 62.0 + index as f32 * 27.0;
             let (headline, _) = split_market_line(item);
             label_fit(&headline, rect.x + 28.0, y, rect.w - 190.0, 18, TEXT_BRIGHT);
         }
+        label_fit(
+            &self.market().strategy_effect,
+            rect.x + 28.0,
+            rect.y + 112.0,
+            rect.w - 190.0,
+            16,
+            ACCENT,
+        );
 
-        let unlock = Rect::new(rect.x + 18.0, rect.y + rect.h - 36.0, rect.w - 36.0, 24.0);
+        let unlock = Rect::new(rect.x + 18.0, rect.y + rect.h - 30.0, rect.w - 36.0, 24.0);
         draw_rectangle(
             unlock.x,
             unlock.y,
@@ -202,17 +211,8 @@ fn split_market_line(item: &str) -> (String, String) {
 }
 
 fn reason_to_care(property: &Property, app: &App) -> &'static str {
-    if property.hidden_defect_risk >= 0.28 {
-        "Risky fixer"
-    } else if upside_amount(property, app) >= 95_000 {
-        "High upside"
-    } else if property.buyer_demand >= 70 {
-        "Family demand"
-    } else if property.guide_price <= 500_000 {
-        "Cheap entry"
-    } else {
-        "Steady play"
-    }
+    let _ = app;
+    property.deal_archetype.label()
 }
 
 fn verdict_color(property: &Property, app: &App) -> Color {
