@@ -60,34 +60,11 @@ fn mouse_position_ui() -> (f32, f32) {
 }
 
 pub fn format_money(value: i64) -> String {
-    let sign = if value < 0 { "-" } else { "" };
-    let mut digits = value.abs().to_string();
-    let mut result = String::new();
-    while digits.len() > 3 {
-        let tail = digits.split_off(digits.len() - 3);
-        if result.is_empty() {
-            result = tail;
-        } else {
-            result = format!("{tail},{result}");
-        }
-    }
-    if result.is_empty() {
-        format!("{sign}${digits}")
-    } else {
-        format!("{sign}${digits},{result}")
-    }
+    macroquad_toolkit::ui::format_money(value)
 }
 
 pub fn format_compact_money(value: i64) -> String {
-    let sign = if value < 0 { "-" } else { "" };
-    let abs = value.abs();
-    if abs >= 1_000_000 {
-        format!("{sign}${:.1}m", abs as f32 / 1_000_000.0)
-    } else if abs >= 1_000 {
-        format!("{sign}${}k", abs / 1_000)
-    } else {
-        format!("{sign}${abs}")
-    }
+    macroquad_toolkit::ui::format_compact_money(value)
 }
 
 pub fn button(rect: Rect, label: &str, enabled: bool, tone: ButtonTone) -> bool {
@@ -118,8 +95,8 @@ pub fn button(rect: Rect, label: &str, enabled: bool, tone: ButtonTone) -> bool 
         );
     }
 
-    draw_rectangle(rect.x, rect.y, rect.w, rect.h, color);
-    draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.5, PANEL_EDGE);
+    let surface = macroquad_toolkit::ui::SurfaceStyle::new(color).with_border(1.5, PANEL_EDGE);
+    macroquad_toolkit::ui::draw_surface(rect, &surface);
 
     let text_color = if enabled { TEXT_BRIGHT } else { TEXT_DIM };
     let font_size = if rect.w < 92.0 { 18 } else { 20 };
@@ -128,25 +105,27 @@ pub fn button(rect: Rect, label: &str, enabled: bool, tone: ButtonTone) -> bool 
 }
 
 pub fn dark_panel(rect: Rect) {
-    draw_rectangle(rect.x, rect.y, rect.w, rect.h, PANEL_DARK);
-    draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, PANEL_EDGE);
+    let surface = macroquad_toolkit::ui::SurfaceStyle::new(PANEL_DARK).with_border(1.0, PANEL_EDGE);
+    macroquad_toolkit::ui::draw_surface(rect, &surface);
 }
 
 pub fn soft_panel(rect: Rect) {
-    draw_rectangle(rect.x, rect.y, rect.w, rect.h, PANEL_SOFT);
-    draw_rectangle_lines(
-        rect.x,
-        rect.y,
-        rect.w,
-        rect.h,
+    let surface = macroquad_toolkit::ui::SurfaceStyle::new(PANEL_SOFT).with_border(
         1.0,
         Color::new(PANEL_EDGE.r, PANEL_EDGE.g, PANEL_EDGE.b, 0.58),
     );
+    macroquad_toolkit::ui::draw_surface(rect, &surface);
 }
 
 pub fn highlight_panel(rect: Rect) {
-    soft_panel(rect);
-    draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 2.0, ACCENT);
+    let surface = macroquad_toolkit::ui::SurfaceStyle::new(PANEL_SOFT)
+        .with_border(2.0, ACCENT)
+        .with_inner_border(
+            1.5,
+            1.0,
+            Color::new(PANEL_EDGE.r, PANEL_EDGE.g, PANEL_EDGE.b, 0.58),
+        );
+    macroquad_toolkit::ui::draw_surface(rect, &surface);
 }
 
 pub fn label(text: &str, x: f32, y: f32, size: u16, color: Color) {
@@ -210,8 +189,8 @@ pub fn draw_money_stat(label_text: &str, value: &str, note: &str, rect: Rect, co
 
 pub fn draw_badge(text: &str, rect: Rect, color: Color) {
     let fill = Color::new(color.r * 0.18, color.g * 0.18, color.b * 0.18, 1.0);
-    draw_rectangle(rect.x, rect.y, rect.w, rect.h, fill);
-    draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, color);
+    let surface = macroquad_toolkit::ui::SurfaceStyle::new(fill).with_border(1.0, color);
+    macroquad_toolkit::ui::draw_surface(rect, &surface);
     let mut size = 17;
     while size > 13 && measure_text_raw(text, size).width > rect.w - 8.0 {
         size -= 1;
@@ -220,7 +199,8 @@ pub fn draw_badge(text: &str, rect: Rect, color: Color) {
 }
 
 pub fn rect_clicked(rect: Rect) -> bool {
-    let (mouse_x, mouse_y) = mouse_position_ui();
+    let mouse = macroquad_toolkit::ui::virtual_mouse_position(UI_WIDTH, UI_HEIGHT);
+    let (mouse_x, mouse_y) = (mouse.x, mouse.y);
     mouse_x >= rect.x
         && mouse_x <= rect.x + rect.w
         && mouse_y >= rect.y
@@ -229,27 +209,38 @@ pub fn rect_clicked(rect: Rect) -> bool {
 }
 
 pub fn draw_centered_label(text: &str, rect: Rect, font_size: u16, color: Color) {
-    draw_centered_text(text, rect, font_size.max(17), color);
+    UI_FONT.with(|stored| {
+        let font = stored.borrow();
+        let style = macroquad_toolkit::ui::TextStyle::new(font_size.max(17) as f32, color);
+        if let Some(font) = font.as_ref() {
+            macroquad_toolkit::ui::draw_text_centered_in_box_ex(
+                text,
+                rect.x,
+                rect.y,
+                rect.w,
+                rect.h,
+                style.with_font(font),
+            );
+        } else {
+            macroquad_toolkit::ui::draw_text_centered_in_box_ex(
+                text, rect.x, rect.y, rect.w, rect.h, style,
+            );
+        }
+    });
 }
 
 pub fn label_fit(text: &str, x: f32, y: f32, max_width: f32, size: u16, color: Color) {
     let size = size.max(17);
-    if measure_label(text, size).width <= max_width {
-        label(text, x, y, size, color);
-        return;
-    }
-
-    let mut clipped = text.to_string();
-    while clipped.len() > 4 {
-        clipped.pop();
-        let candidate = format!("{}...", clipped.trim_end());
-        if measure_label(&candidate, size).width <= max_width {
-            label(&candidate, x, y, size, color);
-            return;
-        }
-    }
-
-    label(text, x, y, size, color);
+    let clipped = UI_FONT.with(|stored| {
+        let font = stored.borrow();
+        macroquad_toolkit::ui::truncate_text_to_width_ex(
+            text,
+            max_width,
+            font.as_ref(),
+            size as f32,
+        )
+    });
+    label(&clipped, x, y, size, color);
 }
 
 pub fn draw_wrapped_text(
@@ -261,23 +252,12 @@ pub fn draw_wrapped_text(
     color: Color,
 ) -> f32 {
     let size = size.max(17);
-    let mut line = String::new();
     let line_height = size as f32 + 8.0;
-    for word in text.split_whitespace() {
-        let candidate = if line.is_empty() {
-            word.to_string()
-        } else {
-            format!("{line} {word}")
-        };
-        if measure_label(&candidate, size).width > max_width && !line.is_empty() {
-            label(&line, x, y, size, color);
-            y += line_height;
-            line = word.to_string();
-        } else {
-            line = candidate;
-        }
-    }
-    if !line.is_empty() {
+    let lines = UI_FONT.with(|stored| {
+        let font = stored.borrow();
+        macroquad_toolkit::ui::wrap_text_ex(text, max_width, font.as_ref(), size as f32)
+    });
+    for line in lines {
         label(&line, x, y, size, color);
         y += line_height;
     }
@@ -286,7 +266,8 @@ pub fn draw_wrapped_text(
 
 pub fn draw_meter(label_text: &str, value: i32, rect: Rect, color: Color) {
     label(label_text, rect.x, rect.y - 6.0, 17, TEXT_DIM);
-    draw_rectangle(rect.x, rect.y, rect.w, rect.h, PANEL_DARK);
+    let surface = macroquad_toolkit::ui::SurfaceStyle::new(PANEL_DARK).with_border(1.0, PANEL_EDGE);
+    macroquad_toolkit::ui::draw_surface(rect, &surface);
     let fill = rect.w * (value as f32 / 100.0).clamp(0.0, 1.0);
     draw_rectangle(rect.x, rect.y, fill, rect.h, color);
     draw_rectangle_lines(rect.x, rect.y, rect.w, rect.h, 1.0, PANEL_EDGE);
