@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub enum ContractorTier {
     Budget,
     Reliable,
@@ -49,7 +49,7 @@ impl ContractorTier {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UpgradeData {
     pub id: String,
     pub name: String,
@@ -61,7 +61,7 @@ pub struct UpgradeData {
     pub description: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ActiveRenovation {
     pub upgrade_id: String,
     pub upgrade_name: String,
@@ -78,7 +78,7 @@ pub struct ActiveRenovation {
     pub note: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct CompletedUpgrade {
     pub upgrade_id: String,
     pub name: String,

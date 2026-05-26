@@ -3,6 +3,7 @@ use macroquad::prelude::*;
 mod app;
 mod data;
 mod model;
+mod save;
 mod screens;
 mod sim;
 mod ui;
@@ -27,7 +28,9 @@ async fn main() {
     let font = load_ttf_font_from_bytes(include_bytes!("../assets/fonts/DejaVuSans.ttf"))
         .expect("embedded UI font should load");
     set_ui_font(font);
-    let mut app = App::new();
+    let title_background =
+        Texture2D::from_file_with_format(include_bytes!("../auction_house_title.png"), None);
+    let mut app = App::new(title_background);
 
     loop {
         let dt = get_frame_time();

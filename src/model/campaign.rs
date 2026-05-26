@@ -1,7 +1,9 @@
+use serde::{Deserialize, Serialize};
+
 pub const CAMPAIGN_GOAL_NET_WORTH: i64 = 1_000_000;
 pub const CAMPAIGN_MAX_WEEKS: u32 = 52;
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum CampaignStatus {
     Active,
     Won,

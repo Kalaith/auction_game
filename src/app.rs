@@ -19,9 +19,10 @@ use crate::sim::valuation::{
 };
 use crate::ui::*;
 use macroquad::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct PurchaseDebrief {
     pub(crate) address: String,
     pub(crate) purchase_price: i64,
@@ -36,6 +37,11 @@ pub(crate) struct PurchaseDebrief {
 }
 
 pub struct App {
+    pub(crate) title_background: Texture2D,
+    pub(crate) title_settings_open: bool,
+    pub(crate) esc_menu_open: bool,
+    pub(crate) esc_settings_open: bool,
+    pub(crate) fullscreen_enabled: bool,
     pub(crate) data: GameData,
     pub(crate) player: Player,
     pub(crate) available_properties: Vec<Property>,
@@ -55,15 +61,20 @@ pub struct App {
 }
 
 impl App {
-    pub fn new() -> Self {
+    pub fn new(title_background: Texture2D) -> Self {
         let data = GameData::load();
         let mut app = Self {
+            title_background,
+            title_settings_open: false,
+            esc_menu_open: false,
+            esc_settings_open: false,
+            fullscreen_enabled: false,
             data,
             player: Player::new(),
             available_properties: Vec::new(),
             week: 1,
             market_index: 0,
-            screen: Screen::Dashboard,
+            screen: Screen::Title,
             current_auction: None,
             purchase_debrief: None,
             sale_result: None,
@@ -80,7 +91,15 @@ impl App {
     }
 
     pub fn update(&mut self, dt: f32) {
-        if self.screen == Screen::Auction {
+        if self.screen != Screen::Title && is_key_pressed(KeyCode::Escape) {
+            if self.esc_settings_open {
+                self.esc_settings_open = false;
+            } else {
+                self.esc_menu_open = !self.esc_menu_open;
+            }
+        }
+
+        if !self.esc_menu_open && self.screen == Screen::Auction {
             if let Some(auction) = self.current_auction.as_mut() {
                 update_auction(auction, dt);
             }
@@ -90,9 +109,17 @@ impl App {
     pub fn draw(&mut self) {
         clear_background(BACKGROUND);
         begin_ui_frame();
+
+        if self.screen == Screen::Title {
+            self.draw_title_screen();
+            return;
+        }
+
+        set_ui_input_enabled(!self.esc_menu_open);
         self.draw_header();
 
         match self.screen.clone() {
+            Screen::Title => self.draw_title_screen(),
             Screen::Dashboard => self.draw_dashboard(),
             Screen::PropertyList => self.draw_property_list(),
             Screen::PropertyDetail(index) => self.draw_property_detail(index),
@@ -102,6 +129,11 @@ impl App {
         }
 
         self.draw_status_bar();
+        set_ui_input_enabled(true);
+
+        if self.esc_menu_open {
+            self.draw_esc_menu();
+        }
     }
 
     pub(crate) fn market(&self) -> &crate::model::MarketEvent {
@@ -117,10 +149,19 @@ impl App {
 
     fn draw_header(&mut self) {
         draw_rectangle(0.0, 0.0, ui_width(), 68.0, PANEL_DARK);
-        label("Auction House Tycoon", 28.0, 42.0, 30, TEXT_BRIGHT);
-        label(&format!("Week {}", self.week), 396.0, 41.0, 19, TEXT_DIM);
+        if button(
+            Rect::new(16.0, 16.0, 36.0, 36.0),
+            "\u{2699}",
+            true,
+            ButtonTone::Ghost,
+        ) {
+            self.esc_menu_open = !self.esc_menu_open;
+            self.esc_settings_open = false;
+        }
+        label("Auction House Tycoon", 68.0, 42.0, 30, TEXT_BRIGHT);
+        label(&format!("Week {}", self.week), 430.0, 41.0, 19, TEXT_DIM);
 
-        let mut x = ui_width() - 610.0;
+        let mut x = ui_width() - 422.0;
         let nav_enabled = self
             .current_auction
             .as_ref()
@@ -153,15 +194,6 @@ impl App {
         ) {
             self.screen = Screen::Portfolio;
         }
-        x += 132.0;
-        if button(
-            Rect::new(x, 18.0, 138.0, 34.0),
-            "New Game",
-            true,
-            ButtonTone::Secondary,
-        ) {
-            *self = App::new();
-        }
     }
 
     fn draw_status_bar(&self) {
@@ -181,6 +213,40 @@ impl App {
             );
             self.screen = Screen::PropertyDetail(index);
         }
+    }
+
+    pub(crate) fn start_new_game(&mut self) {
+        self.player = Player::new();
+        self.available_properties.clear();
+        self.week = 1;
+        self.market_index = 0;
+        self.screen = Screen::Dashboard;
+        self.current_auction = None;
+        self.purchase_debrief = None;
+        self.sale_result = None;
+        self.research_reports.clear();
+        self.selected_contractor = ContractorTier::Reliable;
+        self.campaign_status = CampaignStatus::Active;
+        self.listing_filter = 0;
+        self.walkaway_price = 600_000;
+        self.walkaway_style = WalkawayStyle::Balanced;
+        self.status = "Read the market, pick a property, and keep your margin alive.".to_string();
+        self.title_settings_open = false;
+        self.esc_menu_open = false;
+        self.esc_settings_open = false;
+        self.refresh_available_properties();
+    }
+
+    pub(crate) fn return_to_title(&mut self) {
+        self.screen = Screen::Title;
+        self.title_settings_open = false;
+        self.esc_menu_open = false;
+        self.esc_settings_open = false;
+    }
+
+    pub(crate) fn toggle_fullscreen(&mut self) {
+        self.fullscreen_enabled = !self.fullscreen_enabled;
+        set_fullscreen(self.fullscreen_enabled);
     }
 
     pub(crate) fn buy_research(&mut self, property_id: PropertyId, level: ResearchLevel) {
@@ -502,7 +568,7 @@ impl App {
         };
     }
 
-    fn refresh_available_properties(&mut self) {
+    pub(crate) fn refresh_available_properties(&mut self) {
         let current_net_worth = net_worth(&self.player, self.market());
         let owned_ids: Vec<PropertyId> = self
             .player

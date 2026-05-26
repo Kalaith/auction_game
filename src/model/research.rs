@@ -1,4 +1,6 @@
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 pub enum ResearchLevel {
     StreetScan,
     AgentPack,
@@ -60,7 +62,7 @@ impl ResearchLevel {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub enum WalkawayStyle {
     Conservative,
     Balanced,
@@ -93,7 +95,7 @@ impl WalkawayStyle {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct ResearchReport {
     pub level: ResearchLevel,
 }

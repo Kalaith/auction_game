@@ -1,25 +1,26 @@
 use crate::model::{Bidder, Property, ResearchLevel, WalkawayStyle};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub enum BidderActor {
     Player,
     Npc(usize),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub enum AuctionStatus {
     SoldToPlayer,
     SoldToNpc(String),
     PassedIn,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BidLog {
     pub text: String,
     pub seconds_remaining: f32,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub enum AuctionTemperature {
     QuietRoom,
     SteadyInterest,
@@ -56,7 +57,7 @@ impl AuctionTemperature {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Auction {
     pub property: Property,
     pub current_bid: i64,

@@ -1,6 +1,7 @@
 use crate::model::{ActiveRenovation, CompletedUpgrade, Property, ResearchLevel, WalkawayStyle};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Player {
     pub cash: i64,
     pub debt: i64,
@@ -19,7 +20,7 @@ impl Player {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct OwnedProperty {
     pub property: Property,
     pub purchase_price: i64,

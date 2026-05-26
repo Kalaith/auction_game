@@ -1,7 +1,8 @@
 use crate::model::{DealArchetype, MarketEvent, OwnedProperty, ResearchLevel};
 use crate::sim::valuation::{current_value, round_to_1000, sale_fees};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub enum ReserveChoice {
     Conservative,
     Fair,
@@ -18,7 +19,7 @@ impl ReserveChoice {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SaleResult {
     pub property_address: String,
     pub reserve_choice: ReserveChoice,

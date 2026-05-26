@@ -1,6 +1,6 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum BidderType {
     FirstHomeBuyer,
@@ -24,7 +24,7 @@ impl BidderType {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub enum BidderMood {
     Watching,
     Interested,
@@ -45,7 +45,7 @@ impl BidderMood {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BidderProfileData {
     pub name: String,
     pub bidder_type: BidderType,
@@ -54,7 +54,7 @@ pub struct BidderProfileData {
     pub budget_bias: f32,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Bidder {
     pub name: String,
     pub bidder_type: BidderType,

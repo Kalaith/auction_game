@@ -4,6 +4,7 @@ use std::cell::RefCell;
 
 thread_local! {
     static UI_FONT: RefCell<Option<Font>> = const { RefCell::new(None) };
+    static UI_INPUT_ENABLED: RefCell<bool> = const { RefCell::new(true) };
 }
 
 pub const UI_WIDTH: f32 = 1200.0;
@@ -33,6 +34,16 @@ pub fn set_ui_font(font: Font) {
     UI_FONT.with(|stored| {
         *stored.borrow_mut() = Some(font);
     });
+}
+
+pub fn set_ui_input_enabled(enabled: bool) {
+    UI_INPUT_ENABLED.with(|stored| {
+        *stored.borrow_mut() = enabled;
+    });
+}
+
+fn ui_input_enabled() -> bool {
+    UI_INPUT_ENABLED.with(|stored| *stored.borrow())
 }
 
 pub fn begin_ui_frame() {
@@ -68,6 +79,7 @@ pub fn format_compact_money(value: i64) -> String {
 }
 
 pub fn button(rect: Rect, label: &str, enabled: bool, tone: ButtonTone) -> bool {
+    let enabled = enabled && ui_input_enabled();
     let (mouse_x, mouse_y) = mouse_position_ui();
     let hovered = enabled
         && mouse_x >= rect.x
@@ -199,6 +211,10 @@ pub fn draw_badge(text: &str, rect: Rect, color: Color) {
 }
 
 pub fn rect_clicked(rect: Rect) -> bool {
+    if !ui_input_enabled() {
+        return false;
+    }
+
     let mouse = macroquad_toolkit::ui::virtual_mouse_position(UI_WIDTH, UI_HEIGHT);
     let (mouse_x, mouse_y) = (mouse.x, mouse.y);
     mouse_x >= rect.x
