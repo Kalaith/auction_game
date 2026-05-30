@@ -13,7 +13,7 @@ use crate::sim::renovation::{
     progress_player_renovations, quote_renovation, start_upgrade_project,
 };
 use crate::sim::research::{recommended_walkaway, research_cost};
-use crate::sim::sale_sim::{simulate_sale, ReserveChoice, SaleResult};
+use crate::sim::sale_sim::{simulate_sale, MarketingPlan, ReserveChoice, SaleResult};
 use crate::sim::valuation::{
     cash_needed_to_settle, deposit, market_adjusted_value, net_worth, purchase_fees, sale_fees,
 };
@@ -53,6 +53,7 @@ pub struct App {
     pub(crate) sale_result: Option<SaleResult>,
     pub(crate) research_reports: HashMap<PropertyId, ResearchReport>,
     pub(crate) selected_contractor: ContractorTier,
+    pub(crate) selected_marketing_plan: MarketingPlan,
     pub(crate) campaign_status: CampaignStatus,
     pub(crate) listing_filter: usize,
     pub(crate) walkaway_price: i64,
@@ -80,6 +81,7 @@ impl App {
             sale_result: None,
             research_reports: HashMap::new(),
             selected_contractor: ContractorTier::Reliable,
+            selected_marketing_plan: MarketingPlan::Standard,
             campaign_status: CampaignStatus::Active,
             listing_filter: 0,
             walkaway_price: 600_000,
@@ -226,6 +228,7 @@ impl App {
         self.sale_result = None;
         self.research_reports.clear();
         self.selected_contractor = ContractorTier::Reliable;
+        self.selected_marketing_plan = MarketingPlan::Standard;
         self.campaign_status = CampaignStatus::Active;
         self.listing_filter = 0;
         self.walkaway_price = 600_000;
@@ -420,7 +423,19 @@ impl App {
             return;
         }
         let owned = self.player.properties[index].clone();
-        let result = simulate_sale(&owned, self.market(), choice);
+        let marketing_plan = self.selected_marketing_plan;
+        let marketing_cost = marketing_plan.cost();
+        if self.player.cash < marketing_cost {
+            self.status = format!(
+                "Need {} for the {} campaign.",
+                format_money(marketing_cost),
+                marketing_plan.label()
+            );
+            return;
+        }
+
+        self.player.cash -= marketing_cost;
+        let result = simulate_sale(&owned, self.market(), choice, marketing_plan);
 
         if let Some(sale_price) = result.sale_price {
             self.player.cash += sale_price - result.selling_fees - owned.debt;

@@ -19,10 +19,53 @@ impl ReserveChoice {
     }
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]
+pub enum MarketingPlan {
+    Budget,
+    Standard,
+    Premium,
+}
+
+impl MarketingPlan {
+    pub fn label(self) -> &'static str {
+        match self {
+            MarketingPlan::Budget => "Budget",
+            MarketingPlan::Standard => "Standard",
+            MarketingPlan::Premium => "Premium",
+        }
+    }
+
+    pub fn cost(self) -> i64 {
+        match self {
+            MarketingPlan::Budget => 3_000,
+            MarketingPlan::Standard => 9_000,
+            MarketingPlan::Premium => 18_000,
+        }
+    }
+
+    pub fn description(self) -> &'static str {
+        match self {
+            MarketingPlan::Budget => "Low spend. Works when the deal already has demand.",
+            MarketingPlan::Standard => "Balanced campaign for most exits.",
+            MarketingPlan::Premium => "More bidders, but it punishes thin margins.",
+        }
+    }
+}
+
+impl Default for MarketingPlan {
+    fn default() -> Self {
+        Self::Standard
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SaleResult {
     pub property_address: String,
     pub reserve_choice: ReserveChoice,
+    #[serde(default)]
+    pub marketing_plan: MarketingPlan,
+    #[serde(default)]
+    pub marketing_cost: i64,
     pub reserve_price: i64,
     pub purchase_price: i64,
     pub walkaway_price: i64,
@@ -36,6 +79,8 @@ pub struct SaleResult {
     pub purchase_discipline: String,
     pub research_quality: String,
     pub renovation_choice: String,
+    #[serde(default)]
+    pub marketing_choice: String,
     pub sale_timing: String,
     pub next_time: String,
     pub reputation_delta: i32,
@@ -47,6 +92,7 @@ pub fn simulate_sale(
     owned: &OwnedProperty,
     market: &MarketEvent,
     reserve_choice: ReserveChoice,
+    marketing_plan: MarketingPlan,
 ) -> SaleResult {
     let value = current_value(owned, market);
     let reserve_multiplier = match reserve_choice {
@@ -55,11 +101,15 @@ pub fn simulate_sale(
         ReserveChoice::Ambitious => 1.08,
     };
     let reserve_price = round_to_1000(value as f32 * reserve_multiplier);
-    let demand_score = demand_score(owned, market);
+    let marketing_bonus = marketing_demand_bonus(marketing_plan, owned, market);
+    let demand_score = (demand_score(owned, market) + marketing_bonus).clamp(20.0, 100.0);
     let bidder_count = (2.0 + demand_score / 18.0).round().clamp(2.0, 8.0) as i32;
     let variance = deterministic_variance(owned.property.id, owned.upgrades.len());
     let competition_modifier = ((demand_score - 58.0) / 100.0).clamp(-0.10, 0.12);
-    let highest_bid = round_to_1000(value as f32 * (0.98 + competition_modifier + variance));
+    let marketing_price_lift = marketing_price_lift(marketing_plan, owned);
+    let highest_bid = round_to_1000(
+        value as f32 * (0.98 + competition_modifier + variance + marketing_price_lift),
+    );
     let sale_price = if highest_bid >= reserve_price {
         Some(highest_bid)
     } else {
@@ -67,18 +117,21 @@ pub fn simulate_sale(
     };
 
     let selling_fees = sale_price.map(sale_fees).unwrap_or(0);
+    let marketing_cost = marketing_plan.cost();
     let total_costs = owned.purchase_price
         + owned.purchase_fees
         + owned.upgrade_spend()
         + owned.holding_spend()
+        + marketing_cost
         + selling_fees;
     let profit = sale_price
         .map(|price| price - total_costs)
-        .unwrap_or(-owned.holding_spend());
+        .unwrap_or(-(owned.property.holding_cost_per_week + marketing_cost));
 
     let purchase_discipline = purchase_discipline(owned);
     let research_quality = research_quality(owned);
     let renovation_choice = renovation_choice(owned);
+    let marketing_choice = marketing_choice(marketing_plan, marketing_bonus, owned);
     let sale_timing = sale_timing(profit, sale_price, reserve_choice, owned, demand_score);
     let next_time = next_time(profit, sale_price, owned, reserve_choice);
     let reputation_delta = reputation_delta(profit, sale_price, owned);
@@ -88,6 +141,8 @@ pub fn simulate_sale(
     SaleResult {
         property_address: owned.property.address.clone(),
         reserve_choice,
+        marketing_plan,
+        marketing_cost,
         reserve_price,
         purchase_price: owned.purchase_price,
         walkaway_price: owned.walkaway_price,
@@ -101,11 +156,62 @@ pub fn simulate_sale(
         purchase_discipline,
         research_quality,
         renovation_choice,
+        marketing_choice,
         sale_timing,
         next_time,
         reputation_delta,
         reputation_reason,
         lesson,
+    }
+}
+
+pub fn marketing_demand_bonus(
+    marketing_plan: MarketingPlan,
+    owned: &OwnedProperty,
+    market: &MarketEvent,
+) -> f32 {
+    let base = match marketing_plan {
+        MarketingPlan::Budget => 1.0,
+        MarketingPlan::Standard => 5.0,
+        MarketingPlan::Premium => 10.0,
+    };
+    let market_heat =
+        owned.property.buyer_demand as f32 + market.suburb_modifier(&owned.property.suburb) * 100.0;
+    let appeal_bonus = owned
+        .upgrades
+        .iter()
+        .map(|upgrade| upgrade.sale_emotion_boost)
+        .sum::<i32>() as f32
+        * 0.18;
+
+    let plan_fit = match marketing_plan {
+        MarketingPlan::Budget if market_heat >= 72.0 => 2.0,
+        MarketingPlan::Budget if owned.property.appeal < 45 => -2.0,
+        MarketingPlan::Standard => 0.0,
+        MarketingPlan::Premium if market_heat >= 68.0 => 4.0,
+        MarketingPlan::Premium if owned.property.deal_archetype == DealArchetype::PrettyTrap => 3.0,
+        MarketingPlan::Premium
+            if owned.property.deal_archetype == DealArchetype::QuietBargain
+                || owned.property.deal_archetype == DealArchetype::RiskyFixer =>
+        {
+            -4.0
+        }
+        _ => 0.0,
+    };
+
+    base + appeal_bonus + plan_fit
+}
+
+fn marketing_price_lift(marketing_plan: MarketingPlan, owned: &OwnedProperty) -> f32 {
+    let emotion = owned
+        .upgrades
+        .iter()
+        .map(|upgrade| upgrade.sale_emotion_boost)
+        .sum::<i32>() as f32;
+    match marketing_plan {
+        MarketingPlan::Budget => 0.0,
+        MarketingPlan::Standard => 0.006 + emotion.min(18.0) / 3000.0,
+        MarketingPlan::Premium => 0.012 + emotion.min(24.0) / 2200.0,
     }
 }
 
@@ -228,6 +334,29 @@ fn renovation_choice(owned: &OwnedProperty) -> String {
     }
 }
 
+fn marketing_choice(
+    marketing_plan: MarketingPlan,
+    marketing_bonus: f32,
+    owned: &OwnedProperty,
+) -> String {
+    if marketing_plan == MarketingPlan::Premium && owned.purchase_price > owned.walkaway_price {
+        return "Risky: premium campaign spent more after an already stretched buy.".to_string();
+    }
+    if marketing_plan == MarketingPlan::Premium && marketing_bonus < 8.0 {
+        return "Thin: premium exposure did not fit this buyer pool.".to_string();
+    }
+    if marketing_plan == MarketingPlan::Budget && marketing_bonus <= 0.0 {
+        return "Weak: cheap marketing left buyer objections unresolved.".to_string();
+    }
+    if marketing_plan == MarketingPlan::Budget {
+        return "Efficient: low spend protected cash because demand already existed.".to_string();
+    }
+    if marketing_plan == MarketingPlan::Premium {
+        return "Strong: premium campaign turned appeal into more competition.".to_string();
+    }
+    "Fair: standard campaign gave the listing enough reach without overspending.".to_string()
+}
+
 fn sale_timing(
     profit: i64,
     sale_price: Option<i64>,
@@ -335,5 +464,39 @@ fn sale_lesson(
     } else {
         "The deal landed close to break-even. Your next edge needs to come from buying better or bidding less."
             .to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::data::GameData;
+    use crate::model::{OwnedProperty, Property, ResearchLevel, WalkawayStyle};
+
+    fn sample_owned_property() -> (OwnedProperty, MarketEvent) {
+        let data = GameData::load();
+        let property = Property::from_template(&data.properties[0]);
+        let owned = OwnedProperty::new(
+            property,
+            610_000,
+            26_000,
+            61_000,
+            549_000,
+            625_000,
+            ResearchLevel::BuildingInspection,
+            WalkawayStyle::Balanced,
+        );
+        (owned, data.market_events[0].clone())
+    }
+
+    #[test]
+    fn premium_marketing_adds_pressure_and_cost() {
+        let (owned, market) = sample_owned_property();
+        let budget = simulate_sale(&owned, &market, ReserveChoice::Fair, MarketingPlan::Budget);
+        let premium = simulate_sale(&owned, &market, ReserveChoice::Fair, MarketingPlan::Premium);
+
+        assert!(premium.demand_score >= budget.demand_score);
+        assert_eq!(premium.marketing_cost, MarketingPlan::Premium.cost());
+        assert!(premium.total_costs > budget.total_costs);
     }
 }

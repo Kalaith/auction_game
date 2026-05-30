@@ -3,7 +3,7 @@ use crate::model::{
     Auction, CampaignStatus, ContractorTier, Player, PropertyId, ResearchReport, WalkawayStyle,
 };
 use crate::screens::Screen;
-use crate::sim::sale_sim::SaleResult;
+use crate::sim::sale_sim::{MarketingPlan, SaleResult};
 use macroquad::prelude::set_fullscreen;
 use macroquad_toolkit::persistence::{load_from_slot, save_to_slot};
 use serde::{Deserialize, Serialize};
@@ -23,6 +23,8 @@ struct SaveGameState {
     sale_result: Option<SaleResult>,
     research_reports: HashMap<PropertyId, ResearchReport>,
     selected_contractor: ContractorTier,
+    #[serde(default)]
+    selected_marketing_plan: MarketingPlan,
     campaign_status: CampaignStatus,
     listing_filter: usize,
     walkaway_price: i64,
@@ -43,6 +45,7 @@ impl SaveGameState {
             sale_result: app.sale_result.clone(),
             research_reports: app.research_reports.clone(),
             selected_contractor: app.selected_contractor,
+            selected_marketing_plan: app.selected_marketing_plan,
             campaign_status: app.campaign_status,
             listing_filter: app.listing_filter,
             walkaway_price: app.walkaway_price,
@@ -90,6 +93,7 @@ impl App {
         self.sale_result = save.sale_result;
         self.research_reports = save.research_reports;
         self.selected_contractor = save.selected_contractor;
+        self.selected_marketing_plan = save.selected_marketing_plan;
         self.campaign_status = save.campaign_status;
         self.listing_filter = save.listing_filter;
         self.walkaway_price = save.walkaway_price;

@@ -22,9 +22,10 @@ impl App {
         );
         label(
             &format!(
-                "{} reserve at {} | {} bidders",
+                "{} reserve at {} | {} campaign | {} bidders",
                 result.reserve_choice.label(),
                 format_money(result.reserve_price),
+                result.marketing_plan.label(),
                 result.bidder_count
             ),
             rect.x + 30.0,
@@ -88,7 +89,7 @@ impl App {
             );
         }
 
-        let breakdown = Rect::new(rect.x + 30.0, rect.y + 260.0, rect.w - 60.0, 172.0);
+        let breakdown = Rect::new(rect.x + 30.0, rect.y + 260.0, rect.w - 60.0, 194.0);
         dark_panel(breakdown);
         label(
             "Deal Autopsy",
@@ -97,10 +98,16 @@ impl App {
             22,
             TEXT_BRIGHT,
         );
+        let marketing_choice = if result.marketing_choice.is_empty() {
+            "Not recorded"
+        } else {
+            result.marketing_choice.as_str()
+        };
         let rows = [
             ("Purchase discipline", result.purchase_discipline.as_str()),
             ("Research quality", result.research_quality.as_str()),
             ("Renovation choice", result.renovation_choice.as_str()),
+            ("Marketing", marketing_choice),
             ("Sale timing", result.sale_timing.as_str()),
             ("Reputation", result.reputation_reason.as_str()),
         ];
@@ -117,7 +124,7 @@ impl App {
             );
         }
 
-        let lesson = Rect::new(rect.x + 30.0, rect.y + 450.0, rect.w - 60.0, 96.0);
+        let lesson = Rect::new(rect.x + 30.0, rect.y + 472.0, rect.w - 60.0, 96.0);
         soft_panel(lesson);
         label("Lesson", lesson.x + 18.0, lesson.y + 30.0, 22, TEXT_BRIGHT);
         let next_y = draw_wrapped_text(

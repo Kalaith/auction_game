@@ -2,8 +2,8 @@ use crate::app::App;
 use crate::model::PropertyId;
 use crate::screens::portfolio_widgets::{
     draw_active_project_decision, draw_contractor_selector, draw_empty_portfolio,
-    draw_hold_decision, draw_problem_card, draw_sell_decision, draw_upgrade_decision,
-    recommended_upgrade,
+    draw_hold_decision, draw_marketing_selector, draw_problem_card, draw_sell_decision,
+    draw_upgrade_decision, recommended_upgrade,
 };
 use crate::sim::finance::borrowing_limit;
 use crate::sim::valuation::current_value;
@@ -121,9 +121,12 @@ impl App {
             Rect::new(main.x + 54.0 + card_w * 2.0, card_y, card_w, 160.0),
             position,
             has_active_project,
+            self.selected_marketing_plan,
+            self.player.cash,
         );
 
         draw_contractor_selector(self, main, has_active_project);
+        draw_marketing_selector(self, main, &owned);
 
         if let Some((property_id, upgrade_id)) = upgrade_action {
             self.buy_upgrade(property_id, &upgrade_id);
