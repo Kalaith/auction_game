@@ -1,3 +1,4 @@
+mod auction_bidders;
 pub mod auction_sim;
 pub mod campaign;
 pub mod finance;
