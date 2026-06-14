@@ -9,7 +9,6 @@ mod sim;
 mod ui;
 
 use app::App;
-use ui::set_ui_font;
 
 fn window_conf() -> Conf {
     Conf {
@@ -25,9 +24,7 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    let font = load_ttf_font_from_bytes(include_bytes!("../assets/fonts/DejaVuSans.ttf"))
-        .expect("embedded UI font should load");
-    set_ui_font(font);
+    macroquad_toolkit::ui::ensure_default_ui_font().expect("toolkit UI font should load");
     let title_background =
         Texture2D::from_file_with_format(include_bytes!("../auction_house_title.png"), None);
     let mut app = App::new(title_background);

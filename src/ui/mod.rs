@@ -1,10 +1,8 @@
 use crate::model::{Condition, Property};
 use macroquad::prelude::*;
-use std::cell::RefCell;
 
 thread_local! {
-    static UI_FONT: RefCell<Option<Font>> = const { RefCell::new(None) };
-    static UI_INPUT_ENABLED: RefCell<bool> = const { RefCell::new(true) };
+    static UI_INPUT_ENABLED: std::cell::RefCell<bool> = const { std::cell::RefCell::new(true) };
 }
 
 pub const UI_WIDTH: f32 = 1200.0;
@@ -28,12 +26,6 @@ pub enum ButtonTone {
     Secondary,
     Danger,
     Ghost,
-}
-
-pub fn set_ui_font(font: Font) {
-    UI_FONT.with(|stored| {
-        *stored.borrow_mut() = Some(font);
-    });
 }
 
 pub fn set_ui_input_enabled(enabled: bool) {
@@ -142,20 +134,7 @@ pub fn highlight_panel(rect: Rect) {
 
 pub fn label(text: &str, x: f32, y: f32, size: u16, color: Color) {
     let readable_size = size.max(17);
-    UI_FONT.with(|stored| {
-        let font = stored.borrow();
-        draw_text_ex(
-            text,
-            x,
-            y,
-            TextParams {
-                font: font.as_ref(),
-                font_size: readable_size,
-                color,
-                ..Default::default()
-            },
-        );
-    });
+    macroquad_toolkit::ui::draw_ui_text(text, x, y, readable_size as f32, color);
 }
 
 pub fn measure_label(text: &str, size: u16) -> TextDimensions {
@@ -164,10 +143,7 @@ pub fn measure_label(text: &str, size: u16) -> TextDimensions {
 }
 
 fn measure_text_raw(text: &str, size: u16) -> TextDimensions {
-    UI_FONT.with(|stored| {
-        let font = stored.borrow();
-        measure_text(text, font.as_ref(), size, 1.0)
-    })
+    macroquad_toolkit::ui::measure_ui_text(text, None, size, 1.0)
 }
 
 pub fn draw_value(label_text: &str, value: &str, x: f32, y: f32, width: f32) {
@@ -225,37 +201,15 @@ pub fn rect_clicked(rect: Rect) -> bool {
 }
 
 pub fn draw_centered_label(text: &str, rect: Rect, font_size: u16, color: Color) {
-    UI_FONT.with(|stored| {
-        let font = stored.borrow();
-        let style = macroquad_toolkit::ui::TextStyle::new(font_size.max(17) as f32, color);
-        if let Some(font) = font.as_ref() {
-            macroquad_toolkit::ui::draw_text_centered_in_box_ex(
-                text,
-                rect.x,
-                rect.y,
-                rect.w,
-                rect.h,
-                style.with_font(font),
-            );
-        } else {
-            macroquad_toolkit::ui::draw_text_centered_in_box_ex(
-                text, rect.x, rect.y, rect.w, rect.h, style,
-            );
-        }
-    });
+    let style = macroquad_toolkit::ui::TextStyle::new(font_size.max(17) as f32, color);
+    macroquad_toolkit::ui::draw_text_centered_in_box_ex(
+        text, rect.x, rect.y, rect.w, rect.h, style,
+    );
 }
 
 pub fn label_fit(text: &str, x: f32, y: f32, max_width: f32, size: u16, color: Color) {
     let size = size.max(17);
-    let clipped = UI_FONT.with(|stored| {
-        let font = stored.borrow();
-        macroquad_toolkit::ui::truncate_text_to_width_ex(
-            text,
-            max_width,
-            font.as_ref(),
-            size as f32,
-        )
-    });
+    let clipped = macroquad_toolkit::ui::truncate_text_to_width(text, max_width, size as f32);
     label(&clipped, x, y, size, color);
 }
 
@@ -269,10 +223,7 @@ pub fn draw_wrapped_text(
 ) -> f32 {
     let size = size.max(17);
     let line_height = size as f32 + 8.0;
-    let lines = UI_FONT.with(|stored| {
-        let font = stored.borrow();
-        macroquad_toolkit::ui::wrap_text_ex(text, max_width, font.as_ref(), size as f32)
-    });
+    let lines = macroquad_toolkit::ui::wrap_text(text, max_width, size as f32);
     for line in lines {
         label(&line, x, y, size, color);
         y += line_height;
@@ -440,18 +391,11 @@ fn draw_cloud(x: f32, y: f32, scale: f32) {
 fn draw_centered_text(text: &str, rect: Rect, font_size: u16, color: Color) {
     let font_size = font_size.max(12);
     let measured = measure_text_raw(text, font_size);
-    UI_FONT.with(|stored| {
-        let font = stored.borrow();
-        draw_text_ex(
-            text,
-            rect.x + rect.w * 0.5 - measured.width * 0.5,
-            rect.y + rect.h * 0.5 + measured.height * 0.36,
-            TextParams {
-                font: font.as_ref(),
-                font_size,
-                color,
-                ..Default::default()
-            },
-        );
-    });
+    macroquad_toolkit::ui::draw_ui_text(
+        text,
+        rect.x + rect.w * 0.5 - measured.width * 0.5,
+        rect.y + rect.h * 0.5 + measured.height * 0.36,
+        font_size as f32,
+        color,
+    );
 }
