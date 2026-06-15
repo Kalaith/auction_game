@@ -24,3 +24,10 @@ Grow your portfolio and net worth without letting bad bids, holding costs, or ov
 ## Current Scope
 
 Playable auction-to-resale loop with market pulse, bidding pressure, renovations, sale outcomes, and campaign progress.
+# Practical Future Improvements
+
+- Add deterministic auction-resolution tests for equal bids, last-second bids, reserve prices, and buyer budget limits.
+- Extract bid history, payout, and valuation math into pure functions so UI screens cannot disagree with final settlement.
+- Add data-driven auction lots and bidder profiles with fixtures for common market scenarios.
+- Replace scattered formatting logic with shared currency and timer helpers for consistent auction readouts.
+
