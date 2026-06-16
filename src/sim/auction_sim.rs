@@ -571,10 +571,10 @@ fn npc_bid_amount(auction: &Auction, index: usize) -> i64 {
                 jump_increments = 2;
             }
         }
-        BidderType::FirstHomeBuyer => {
-            if auction.temperature == AuctionTemperature::FomoSpiral && bidder.bid_count > 1 {
-                jump_increments = 2;
-            }
+        BidderType::FirstHomeBuyer
+            if auction.temperature == AuctionTemperature::FomoSpiral && bidder.bid_count > 1 =>
+        {
+            jump_increments = 2;
         }
         _ => {}
     }

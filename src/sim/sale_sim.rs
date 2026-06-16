@@ -19,9 +19,10 @@ impl ReserveChoice {
     }
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq, Serialize, Default)]
 pub enum MarketingPlan {
     Budget,
+    #[default]
     Standard,
     Premium,
 }
@@ -49,12 +50,6 @@ impl MarketingPlan {
             MarketingPlan::Standard => "Balanced campaign for most exits.",
             MarketingPlan::Premium => "More bidders, but it punishes thin margins.",
         }
-    }
-}
-
-impl Default for MarketingPlan {
-    fn default() -> Self {
-        Self::Standard
     }
 }
 
