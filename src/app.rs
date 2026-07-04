@@ -92,6 +92,30 @@ impl App {
         app
     }
 
+    /// Seed a specific scene for the screenshot harness.
+    pub fn begin_capture_scene(&mut self, scene: &str) {
+        match scene {
+            "listings" => {
+                self.start_new_game();
+                self.screen = Screen::PropertyList;
+            }
+            "auction" => {
+                self.start_new_game();
+                if let Some(property) = self.available_properties.first().cloned() {
+                    self.start_auction(property.id);
+                }
+            }
+            "title" => {
+                // Boot state; App::new() already lands here, nothing to do.
+            }
+            _ => {
+                // Default ("dashboard"/"gameplay"): start a fresh campaign,
+                // which lands on the main dashboard.
+                self.start_new_game();
+            }
+        }
+    }
+
     pub fn update(&mut self, dt: f32) {
         if self.screen != Screen::Title && is_key_pressed(KeyCode::Escape) {
             if self.esc_settings_open {
