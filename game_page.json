@@ -1,0 +1,25 @@
+{
+  "title": "Auction House Tycoon",
+  "status": { "text": "Playable", "class": "playable" },
+  "canvas_rendering": "auto",
+  "canvas": {
+    "width": 1200,
+    "height": 675
+  },
+  "about": [
+    "Buy undervalued properties at auction, protect your margin, renovate carefully, and sell before fees, debt, and holding costs erase the deal."
+  ],
+  "controls": [
+    { "key": "Mouse", "desc": "Inspect listings, bid, renovate, and sell" }
+  ],
+  "details": [
+    { "label": "Genre", "value": "Property Strategy" },
+    { "label": "Engine", "value": "Macroquad" },
+    { "label": "Platform", "value": "Browser, Windows" }
+  ],
+  "download": {
+    "href": "auction_game_windows.zip",
+    "label": "Windows Build"
+  },
+  "repository": "https://github.com/Kalaith/auction_game"
+}
