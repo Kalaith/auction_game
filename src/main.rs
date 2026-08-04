@@ -14,6 +14,10 @@ mod ui;
 use app::App;
 
 fn window_conf() -> Conf {
+    // Hand-built Conf means no automatic arming: without this the capture run
+    // puts a full game window on the desktop for its whole duration.
+    capture::headless::arm("AUCTION_GAME");
+
     // Built by hand (not capture::capture_window_conf) to keep sample_count: 0;
     // high_dpi already defaults to false, so captures are pixel-aligned
     // regardless of capture mode.
