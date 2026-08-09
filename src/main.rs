@@ -41,13 +41,15 @@ async fn main() {
 
     // Screenshot harness: when AUCTION_GAME_CAPTURE_PATH is set, seed a scene,
     // simulate deterministic frames, write a PNG, and exit.
-    if let Some(config) = capture::CaptureConfig::from_env("AUCTION_GAME") {
-        app.begin_capture_scene(&config.scene);
-        capture::run_capture(&config, |dt| {
-            app.update(dt);
-            app.draw();
-        })
-        .await;
+    if let Some(configs) = capture::CaptureConfig::all_from_env("AUCTION_GAME") {
+        for config in configs {
+            app.begin_capture_scene(&config.scene);
+            capture::run_capture_once(&config, |dt| {
+                app.update(dt);
+                app.draw();
+            })
+            .await;
+        }
         return;
     }
 
