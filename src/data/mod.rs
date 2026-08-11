@@ -11,7 +11,9 @@ pub struct GameData {
 
 impl GameData {
     pub fn load() -> Self {
-        serde_json::from_str(include_str!("../../assets/game_data.json"))
-            .expect("assets/game_data.json should be valid game data")
+        serde_json::from_str(macroquad_toolkit::include_json_str!(
+            "../../assets/game_data.json"
+        ))
+        .expect("assets/game_data.json should be valid game data")
     }
 }
