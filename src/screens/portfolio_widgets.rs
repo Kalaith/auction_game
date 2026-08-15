@@ -117,31 +117,6 @@ pub(super) fn draw_problem_card(
     );
 }
 
-pub(super) fn draw_loan_control(rect: Rect, owned: &OwnedProperty, cash: i64) -> bool {
-    dark_panel(rect);
-    label("PROPERTY LOAN", rect.x + 14.0, rect.y + 22.0, 13, TEXT_DIM);
-    label(
-        &format_money(owned.debt),
-        rect.x + 14.0,
-        rect.y + 50.0,
-        24,
-        TEXT_BRIGHT,
-    );
-    label(
-        "Pay $10k | bank room +$10k",
-        rect.x + 14.0,
-        rect.y + 72.0,
-        13,
-        POSITIVE,
-    );
-    button(
-        Rect::new(rect.x + rect.w - 114.0, rect.y + 20.0, 98.0, 38.0),
-        "Pay $10k",
-        owned.debt > 0 && cash >= 10_000,
-        ButtonTone::Secondary,
-    )
-}
-
 pub(super) fn draw_maintenance_decision(rect: Rect, owned: &OwnedProperty, cash: i64) -> bool {
     let Some(issue) = &owned.maintenance_issue else {
         return false;

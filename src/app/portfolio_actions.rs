@@ -1,6 +1,6 @@
 use super::App;
 use crate::model::PropertyId;
-use crate::sim::finance::pay_down_principal;
+use crate::sim::finance::{pay_down_principal, refinance_property};
 use crate::sim::maintenance::repair_maintenance;
 use crate::sim::rental::{end_tenancy, leasing_cost, weekly_rent_for_owned};
 use crate::ui::format_money;
@@ -16,6 +16,21 @@ impl App {
         self.status = format!(
             "Paid {} off the selected loan. Interest pressure and bank debt both fell.",
             format_money(paid)
+        );
+    }
+
+    pub(crate) fn refinance_owned_property(&mut self, property_id: PropertyId) {
+        let market = self.market().clone();
+        let Some(result) = refinance_property(&mut self.player, property_id, &market) else {
+            self.status = "Refinance needs four leased weeks, clean maintenance, equity below 80% LVR, and bank room."
+                .to_string();
+            return;
+        };
+        self.status = format!(
+            "Refinanced {} of equity: {} released after the {} bank fee. Debt and weekly interest rose.",
+            format_money(result.debt_added),
+            format_money(result.cash_released),
+            format_money(result.fee)
         );
     }
 

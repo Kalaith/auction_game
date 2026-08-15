@@ -111,6 +111,19 @@ impl App {
                 self.status = "A maintenance check found an issue. Repair it to restore full rent."
                     .to_string();
             }
+            "portfolio_refinance" => {
+                self.start_new_game();
+                self.seed_portfolio_capture();
+                if let Some(owned) = self.player.properties.first_mut() {
+                    owned.weeks_held = 4;
+                    owned.debt -= 70_000;
+                    self.player.debt -= 70_000;
+                }
+                self.screen = Screen::Portfolio;
+                self.status =
+                    "Seasoned equity is available. Releasing it raises debt and funds the next deposit."
+                        .to_string();
+            }
             "sale_result" => {
                 self.start_new_game();
                 self.seed_portfolio_capture();

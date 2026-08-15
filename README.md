@@ -16,6 +16,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - Negotiate a visible vendor counteroffer after a pass-in, or leave the private deal untouched.
 - Build a season record that credits disciplined exits alongside purchases and profitable sales.
 - Pay down individual property loans when freeing bank headroom matters more than keeping cash liquid.
+- Refinance seasoned rental equity to fund another deposit without selling the home.
 - Read the seller-side auction ledger: reserve, bidder depth, debt cleared, settlement release, and true profit.
 - Read a weekly portfolio statement instead of guessing where rent and cash went.
 - Renovate, place or end tenancies, collect rent, handle scheduled maintenance, hold, or sell purchased properties.

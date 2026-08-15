@@ -1,6 +1,8 @@
 use crate::model::{MarketEvent, Player, PropertyId};
 use crate::sim::rental::portfolio_rental_snapshot;
-use crate::sim::valuation::{cash_needed_to_settle, deposit, net_worth, round_down_to_increment};
+use crate::sim::valuation::{
+    cash_needed_to_settle, current_value, deposit, net_worth, round_down_to_increment,
+};
 
 const STARTER_BORROWING_LIMIT: i64 = 620_000;
 const REPUTATION_BONUS: i64 = 35_000;
@@ -8,6 +10,8 @@ const NET_WORTH_LEVERAGE: f32 = 0.85;
 const RENTAL_INCOME_LEVERAGE: i64 = 280;
 const BID_INCREMENT: i64 = 10_000;
 const MAX_TEST_PRICE: i64 = 2_500_000;
+const REFINANCE_LVR: f32 = 0.80;
+pub const REFINANCE_FEE: i64 = 2_000;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FinanceStress {
@@ -99,6 +103,62 @@ pub fn pay_down_principal(player: &mut Player, property_id: PropertyId, requeste
     player.debt -= payment;
     player.properties[index].debt -= payment;
     payment
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RefinanceResult {
+    pub debt_added: i64,
+    pub fee: i64,
+    pub cash_released: i64,
+}
+
+pub fn refinance_capacity(player: &Player, property_id: PropertyId, market: &MarketEvent) -> i64 {
+    let Some(owned) = player
+        .properties
+        .iter()
+        .find(|owned| owned.property.id == property_id)
+    else {
+        return 0;
+    };
+    if !owned.is_leased
+        || owned.weeks_held < 4
+        || owned.active_renovation.is_some()
+        || owned.maintenance_issue.is_some()
+    {
+        return 0;
+    }
+
+    let property_limit = round_down_to_increment(
+        (current_value(owned, market) as f32 * REFINANCE_LVR) as i64,
+        BID_INCREMENT,
+    );
+    let property_room = (property_limit - owned.debt).max(0);
+    let bank_room = (borrowing_limit(player, market) - player.debt - BID_INCREMENT).max(0);
+    round_down_to_increment(property_room.min(bank_room), BID_INCREMENT)
+}
+
+pub fn refinance_property(
+    player: &mut Player,
+    property_id: PropertyId,
+    market: &MarketEvent,
+) -> Option<RefinanceResult> {
+    let debt_added = refinance_capacity(player, property_id, market);
+    if debt_added < BID_INCREMENT || debt_added <= REFINANCE_FEE {
+        return None;
+    }
+    let index = player
+        .properties
+        .iter()
+        .position(|owned| owned.property.id == property_id)?;
+    let cash_released = debt_added - REFINANCE_FEE;
+    player.properties[index].debt += debt_added;
+    player.debt += debt_added;
+    player.cash += cash_released;
+    Some(RefinanceResult {
+        debt_added,
+        fee: REFINANCE_FEE,
+        cash_released,
+    })
 }
 
 #[cfg(test)]

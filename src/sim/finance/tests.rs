@@ -49,6 +49,40 @@ fn principal_payment_reduces_cash_and_both_debt_ledgers() {
 }
 
 #[test]
+fn seasoned_equity_can_be_recycled_without_selling_the_home() {
+    let data = GameData::load();
+    let market = &data.market_events[0];
+    let mut player = Player::new();
+    let property = Property::from_template(&data.properties[0]);
+    let property_id = property.id;
+    let mut owned = OwnedProperty::new(
+        property,
+        300_000,
+        12_000,
+        36_000,
+        264_000,
+        340_000,
+        ResearchLevel::BuildingInspection,
+        WalkawayStyle::Balanced,
+    );
+    owned.is_leased = true;
+    owned.weeks_held = 4;
+    player.debt = owned.debt;
+    player.properties.push(owned);
+    let cash_before = player.cash;
+    let capacity = refinance_capacity(&player, property_id, market);
+
+    let result = refinance_property(&mut player, property_id, market)
+        .expect("seasoned low-LVR property should refinance");
+
+    assert_eq!(result.debt_added, capacity);
+    assert_eq!(result.cash_released, capacity - REFINANCE_FEE);
+    assert_eq!(player.cash, cash_before + result.cash_released);
+    assert!(player.debt <= borrowing_limit(&player, market));
+    assert_eq!(refinance_capacity(&player, property_id, market), 0);
+}
+
+#[test]
 fn two_performing_rentals_and_discipline_open_the_third_purchase() {
     let data = GameData::load();
     let market = &data.market_events[0];
