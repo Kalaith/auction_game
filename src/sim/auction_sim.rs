@@ -9,6 +9,8 @@ use crate::sim::auction_bidders::{
     overbid_tendency, pressure_tolerance, stretch_increments, table_clue, tell_for,
     temperature_bid_modifier, BID_INCREMENT,
 };
+#[cfg(test)]
+use crate::sim::auction_events::{accept_post_auction_offer, post_auction_offer};
 use crate::sim::auction_events::{announce_on_market, place_vendor_bid, should_place_vendor_bid};
 use crate::sim::valuation::round_down_to_increment;
 use macroquad_toolkit::rng;

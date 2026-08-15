@@ -212,3 +212,16 @@ fn quick_resolution_always_reaches_a_hammer_or_pass_in() {
         assert!(auction.current_bid >= auction.reserve_price);
     }
 }
+
+#[test]
+fn passed_in_vendor_counter_can_be_accepted_below_reserve() {
+    let mut auction = auction();
+    auction.current_bid = auction.reserve_price - auction.bid_increment * 3;
+    auction.status = Some(AuctionStatus::PassedIn);
+
+    let offer = post_auction_offer(&auction).unwrap();
+    assert_eq!(offer, auction.reserve_price - auction.bid_increment);
+    assert!(accept_post_auction_offer(&mut auction));
+    assert_eq!(auction.current_bid, offer);
+    assert_eq!(auction.status, Some(AuctionStatus::SoldToPlayer));
+}

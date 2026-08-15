@@ -30,6 +30,7 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - A walk-away is a commitment device, not a hard lock.
 - The vendor's true reserve stays hidden; research provides an estimate and the auctioneer announces when bidding crosses the real line.
 - One declared vendor bid may move the auction below reserve, but can never buy the property or put it on the market.
+- A pass-in moves to a private vendor counteroffer below reserve; accepting still requires finance and can still violate the player's walk-away.
 - ASSERT is theatre with asymmetric consequences: it discourages rational buyers and can provoke emotional ones.
 - A room read is earned by lowering the paddle; the observation becomes stale on the next bid, and better diligence makes it more precise.
 - A renovation is recommended only when its expected value exceeds its full quoted effect.

@@ -4,6 +4,7 @@ use crate::screens::auction_widgets::{
     bid_verdict, draw_heat_bar, guidance_color, money_color, mood_color,
 };
 use crate::screens::Screen;
+use crate::sim::auction_events::{accept_post_auction_offer, post_auction_offer};
 use crate::sim::auction_sim::{
     hold_player_position, place_player_bid, place_player_jump_bid, quick_resolve_auction,
     stop_player_bidding, AUCTION_DURATION_SECONDS,
@@ -22,6 +23,7 @@ enum AuctionUiAction {
     QuickResolve,
     Settle,
     ReturnToListings,
+    AcceptPostAuction,
 }
 
 impl App {
@@ -48,6 +50,15 @@ impl App {
             self.player.reputation,
         );
         let can_afford_next = finance.can_buy;
+        let panel_price = if auction.is_running() {
+            next_bid
+        } else if auction.status == Some(AuctionStatus::PassedIn) {
+            post_auction_offer(&auction).unwrap_or(auction.current_bid)
+        } else {
+            auction.current_bid
+        };
+        let panel_finance = finance_snapshot(&self.player, self.market(), panel_price);
+        let panel_margin = projected_purchase_margin(&property, panel_price, self.market());
         let mut action = None;
 
         let panel_h = ui_height() - 142.0;
@@ -59,9 +70,9 @@ impl App {
             left,
             &auction,
             reserve_estimate,
-            next_cash_needed,
-            finance.headroom_after,
-            next_margin,
+            cash_needed_to_settle(panel_price),
+            panel_finance.headroom_after,
+            panel_margin,
         );
         if auction.is_running() {
             action = draw_live_decision_panel(
@@ -124,6 +135,15 @@ impl App {
                 self.current_auction = None;
                 self.screen = Screen::PropertyList;
             }
+            Some(AuctionUiAction::AcceptPostAuction) => {
+                if let Some(auction) = self.current_auction.as_mut() {
+                    if accept_post_auction_offer(auction) {
+                        self.status =
+                            "Vendor accepted. Review the numbers, then tap SETTLE PURCHASE."
+                                .to_string();
+                    }
+                }
+            }
             None => {}
         }
     }
@@ -149,18 +169,30 @@ impl App {
                 }
             }
             AuctionStatus::SoldToNpc(name) => {
+                let walked_away = auction.player_exit_bid.is_some();
                 label(
-                    "Walk-away Held",
+                    if walked_away {
+                        "Walk-away Held"
+                    } else {
+                        "Outbid At The Hammer"
+                    },
                     rect.x + 26.0,
                     rect.y + 46.0,
                     30,
                     TEXT_BRIGHT,
                 );
                 draw_wrapped_text(
-                    &format!(
-                        "{name} bought it for {}. Your cash stayed out of a hotter deal.",
-                        format_money(auction.current_bid)
-                    ),
+                    &if walked_away {
+                        format!(
+                            "{name} bought it for {}. Your cash stayed out of a hotter deal.",
+                            format_money(auction.current_bid)
+                        )
+                    } else {
+                        format!(
+                            "{name} held the final bid at {}. You kept the paddle down when the last call came.",
+                            format_money(auction.current_bid)
+                        )
+                    },
                     rect.x + 26.0,
                     rect.y + 92.0,
                     rect.w - 52.0,
@@ -177,20 +209,74 @@ impl App {
                 }
             }
             AuctionStatus::PassedIn => {
-                label("Passed In", rect.x + 26.0, rect.y + 46.0, 30, TEXT_BRIGHT);
+                label(
+                    "Passed In — Negotiation",
+                    rect.x + 26.0,
+                    rect.y + 46.0,
+                    30,
+                    TEXT_BRIGHT,
+                );
                 draw_wrapped_text(
-                    "No one reached reserve. That tells you the room was cooler than the quote.",
+                    "The public auction missed reserve. The vendor's agent will now name a private counteroffer; you may still leave.",
                     rect.x + 26.0,
                     rect.y + 92.0,
                     rect.w - 52.0,
                     20,
                     TEXT,
                 );
+                let offer = post_auction_offer(auction).unwrap_or(auction.reserve_price);
+                let offer_finance = finance_snapshot(&self.player, self.market(), offer);
+                label(
+                    "Vendor counteroffer",
+                    rect.x + 26.0,
+                    rect.y + 166.0,
+                    17,
+                    TEXT_DIM,
+                );
+                label(
+                    &format_money(offer),
+                    rect.x + 26.0,
+                    rect.y + 208.0,
+                    42,
+                    if offer <= auction.player_walkaway_price {
+                        POSITIVE
+                    } else {
+                        WARNING
+                    },
+                );
+                let walkaway_relation = if offer <= auction.player_walkaway_price {
+                    "below"
+                } else {
+                    "above"
+                };
+                label(
+                    &format!(
+                        "{} {walkaway_relation} walk-away | cash after settle {}",
+                        format_money((offer - auction.player_walkaway_price).abs()),
+                        format_money(offer_finance.cash_after_settle)
+                    ),
+                    rect.x + 28.0,
+                    rect.y + 240.0,
+                    16,
+                    TEXT_DIM,
+                );
                 if button(
-                    Rect::new(rect.x + 36.0, rect.y + rect.h - 64.0, rect.w - 72.0, 44.0),
-                    "Return To Listings",
+                    Rect::new(rect.x + 26.0, rect.y + rect.h - 64.0, 210.0, 44.0),
+                    &format!("BUY {}", format_money(offer)),
+                    offer_finance.can_buy,
+                    if offer <= auction.player_walkaway_price {
+                        ButtonTone::Primary
+                    } else {
+                        ButtonTone::Danger
+                    },
+                ) {
+                    return Some(AuctionUiAction::AcceptPostAuction);
+                }
+                if button(
+                    Rect::new(rect.x + rect.w - 206.0, rect.y + rect.h - 64.0, 180.0, 44.0),
+                    "LEAVE THE DEAL",
                     true,
-                    ButtonTone::Secondary,
+                    ButtonTone::Ghost,
                 ) {
                     return Some(AuctionUiAction::ReturnToListings);
                 }

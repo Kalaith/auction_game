@@ -1,4 +1,4 @@
-use crate::model::{Auction, BidderActor};
+use crate::model::{Auction, AuctionStatus, BidderActor};
 use crate::sim::auction_sim::{push_log, AUCTION_DURATION_SECONDS};
 
 pub(super) fn should_place_vendor_bid(auction: &Auction) -> bool {
@@ -37,4 +37,32 @@ pub(super) fn announce_on_market(auction: &mut Auction) {
         auction,
         "We are on the market. The highest bidder now buys the home.".to_string(),
     );
+}
+
+pub fn post_auction_offer(auction: &Auction) -> Option<i64> {
+    if auction.status != Some(AuctionStatus::PassedIn) {
+        return None;
+    }
+    Some(
+        (auction.reserve_price - auction.bid_increment)
+            .max(auction.current_bid)
+            .min(auction.reserve_price),
+    )
+}
+
+pub fn accept_post_auction_offer(auction: &mut Auction) -> bool {
+    let Some(offer) = post_auction_offer(auction) else {
+        return false;
+    };
+    auction.current_bid = offer;
+    auction.last_bidder = Some(BidderActor::Player);
+    auction.status = Some(AuctionStatus::SoldToPlayer);
+    push_log(
+        auction,
+        format!(
+            "Vendor accepts your post-auction offer of {}.",
+            crate::ui::format_money(offer)
+        ),
+    );
+    true
 }
