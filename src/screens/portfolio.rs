@@ -3,8 +3,9 @@ use crate::model::PropertyId;
 use crate::screens::portfolio_widgets::{
     draw_active_project_decision, draw_contractor_selector, draw_empty_portfolio,
     draw_hold_decision, draw_lease_decision, draw_marketing_selector, draw_problem_card,
-    draw_sell_decision, draw_upgrade_decision, recommended_upgrade,
+    draw_sell_decision, draw_skip_renovation, draw_upgrade_decision, recommended_upgrade,
 };
+use crate::sim::campaign::{weekly_debt_interest, weekly_holding_cost};
 use crate::sim::finance::borrowing_limit;
 use crate::sim::rental::{leasing_cost, portfolio_rental_snapshot, weekly_rent_for};
 use crate::sim::valuation::current_value;
@@ -23,24 +24,29 @@ impl App {
             .portfolio_index
             .min(self.player.properties.len().saturating_sub(1));
         let rental = portfolio_rental_snapshot(&self.player);
+        let portfolio_cashflow = rental.gross_rent
+            - rental.operating_cost
+            - weekly_debt_interest(self.player.debt, self.market())
+            - weekly_holding_cost(&self.player);
         label(
             &format!(
-                "{} homes | {} leased | {} gross rent each week",
+                "{} homes | {} leased | {} gross rent | {} weekly cashflow",
                 self.player.properties.len(),
                 self.player
                     .properties
                     .iter()
                     .filter(|owned| owned.is_leased)
                     .count(),
-                format_money(rental.gross_rent)
+                format_money(rental.gross_rent),
+                format_money(portfolio_cashflow)
             ),
             212.0,
             106.0,
             17,
-            if rental.gross_rent > 0 {
+            if portfolio_cashflow >= 0 {
                 POSITIVE
             } else {
-                TEXT_DIM
+                WARNING
             },
         );
 
@@ -163,14 +169,7 @@ impl App {
             self.market(),
         );
 
-        label(
-            "Recommended Actions",
-            main.x + 18.0,
-            main.y + 264.0,
-            24,
-            TEXT_BRIGHT,
-        );
-        let card_y = main.y + 286.0;
+        let card_y = main.y + 272.0;
         let card_w = (main.w - 54.0) / 3.0;
         let mut upgrade_action: Option<(PropertyId, String)> = None;
         let mut hold_week = false;
@@ -178,6 +177,8 @@ impl App {
 
         if has_active_project {
             draw_active_project_decision(Rect::new(main.x + 18.0, card_y, card_w, 160.0), &owned);
+        } else if owned.is_leased {
+            draw_skip_renovation(Rect::new(main.x + 18.0, card_y, card_w, 160.0), &owned);
         } else if let Some((upgrade, quote)) = recommended_upgrade(self, &owned) {
             if draw_upgrade_decision(
                 Rect::new(main.x + 18.0, card_y, card_w, 160.0),
@@ -188,6 +189,8 @@ impl App {
             ) {
                 upgrade_action = Some((owned.property.id, upgrade.id.clone()));
             }
+        } else {
+            draw_skip_renovation(Rect::new(main.x + 18.0, card_y, card_w, 160.0), &owned);
         }
 
         let hold_rect = Rect::new(main.x + 36.0 + card_w, card_y, card_w, 160.0);
@@ -202,7 +205,8 @@ impl App {
                 asking_rent,
                 leasing_cost(asking_rent),
                 self.player.cash,
-                has_active_project,
+                has_active_project
+                    || (owned.hidden_defect_discovered && !owned.has_defect_repair()),
             ) {
                 lease = true;
             }

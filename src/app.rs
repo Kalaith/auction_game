@@ -1,7 +1,7 @@
 use crate::data::GameData;
 use crate::model::{
     AuctionStatus, CampaignStatus, ContractorTier, OwnedProperty, Player, Property, PropertyId,
-    ResearchLevel, ResearchReport, WalkawayStyle,
+    ResearchLevel, ResearchReport, WalkawayStyle, CAMPAIGN_MAX_WEEKS, WEEKLY_AUCTION_REGISTRATIONS,
 };
 use crate::screens::Screen;
 use crate::sim::auction_sim::{create_auction, update_auction};
@@ -22,6 +22,8 @@ use crate::ui::*;
 use macroquad::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+mod capture;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct PurchaseDebrief {
@@ -58,6 +60,8 @@ pub struct App {
     pub(crate) campaign_status: CampaignStatus,
     pub(crate) listing_filter: usize,
     pub(crate) portfolio_index: usize,
+    pub(crate) auction_registrations: u8,
+    pub(crate) auctioned_property_ids: Vec<PropertyId>,
     pub(crate) walkaway_price: i64,
     pub(crate) walkaway_style: WalkawayStyle,
     pub(crate) status: String,
@@ -87,36 +91,14 @@ impl App {
             campaign_status: CampaignStatus::Active,
             listing_filter: 0,
             portfolio_index: 0,
+            auction_registrations: WEEKLY_AUCTION_REGISTRATIONS,
+            auctioned_property_ids: Vec::new(),
             walkaway_price: 600_000,
             walkaway_style: WalkawayStyle::Balanced,
             status: "Read the market, pick a property, and keep your margin alive.".to_string(),
         };
         app.refresh_available_properties();
         app
-    }
-
-    /// Seed a specific scene for the screenshot harness.
-    pub fn begin_capture_scene(&mut self, scene: &str) {
-        match scene {
-            "listings" => {
-                self.start_new_game();
-                self.screen = Screen::PropertyList;
-            }
-            "auction" => {
-                self.start_new_game();
-                if let Some(property) = self.available_properties.first().cloned() {
-                    self.start_auction(property.id);
-                }
-            }
-            "title" => {
-                // Boot state; App::new() already lands here, nothing to do.
-            }
-            _ => {
-                // Default ("dashboard"/"gameplay"): start a fresh campaign,
-                // which lands on the main dashboard.
-                self.start_new_game();
-            }
-        }
     }
 
     pub fn update(&mut self, dt: f32) {
@@ -149,6 +131,7 @@ impl App {
 
         match self.screen.clone() {
             Screen::Title => self.draw_title_screen(),
+            Screen::Briefing => self.draw_briefing(),
             Screen::Dashboard => self.draw_dashboard(),
             Screen::PropertyList => self.draw_property_list(),
             Screen::PropertyDetail(index) => self.draw_property_detail(index),
@@ -189,6 +172,17 @@ impl App {
         }
         label("Auction House Tycoon", 68.0, 42.0, 30, TEXT_BRIGHT);
         label(&format!("Week {}", self.week), 430.0, 41.0, 19, TEXT_DIM);
+        label(
+            &format!("Registrations {}/2", self.auction_registrations),
+            520.0,
+            41.0,
+            16,
+            if self.auction_registrations > 0 {
+                POSITIVE
+            } else {
+                WARNING
+            },
+        );
 
         let mut x = ui_width() - 422.0;
         let nav_enabled = self
@@ -249,7 +243,7 @@ impl App {
         self.available_properties.clear();
         self.week = 1;
         self.market_index = 0;
-        self.screen = Screen::Dashboard;
+        self.screen = Screen::Briefing;
         self.current_auction = None;
         self.purchase_debrief = None;
         self.sale_result = None;
@@ -259,9 +253,11 @@ impl App {
         self.campaign_status = CampaignStatus::Active;
         self.listing_filter = 0;
         self.portfolio_index = 0;
+        self.auction_registrations = WEEKLY_AUCTION_REGISTRATIONS;
+        self.auctioned_property_ids.clear();
         self.walkaway_price = 600_000;
         self.walkaway_style = WalkawayStyle::Balanced;
-        self.status = "Read the market, pick a property, and keep your margin alive.".to_string();
+        self.status = "Read the brief, then tap OPEN WEEK 1 LISTINGS.".to_string();
         self.title_settings_open = false;
         self.esc_menu_open = false;
         self.esc_settings_open = false;
@@ -320,6 +316,11 @@ impl App {
     }
 
     pub(crate) fn start_auction(&mut self, property_id: PropertyId) {
+        if self.auction_registrations == 0 {
+            self.status = "This week's registrations are used. Tap ADVANCE WEEK on the Dashboard."
+                .to_string();
+            return;
+        }
         let Some(property) = self
             .available_properties
             .iter()
@@ -336,6 +337,10 @@ impl App {
             self.research_level(property.id),
             self.walkaway_style,
         ));
+        self.auction_registrations -= 1;
+        self.auctioned_property_ids.push(property.id);
+        self.available_properties
+            .retain(|listed| listed.id != property.id);
         self.purchase_debrief = None;
         self.screen = Screen::Auction;
         self.status =
@@ -520,6 +525,12 @@ impl App {
             self.status = "Finish the renovation before placing a tenant.".to_string();
             return;
         }
+        if self.player.properties[index].hidden_defect_discovered
+            && !self.player.properties[index].has_defect_repair()
+        {
+            self.status = "Repair the known structural risk before placing a tenant.".to_string();
+            return;
+        }
         let rent = weekly_rent_for(&self.player.properties[index].property, self.market());
         let fee = leasing_cost(rent);
         if self.player.cash < fee {
@@ -602,6 +613,7 @@ impl App {
         let completed_jobs = progress_player_renovations(&mut self.player);
         self.week += 1;
         self.market_index = ((self.week - 1) as usize) % self.data.market_events.len();
+        self.auction_registrations = WEEKLY_AUCTION_REGISTRATIONS;
         let current_net_worth = net_worth(&self.player, self.market());
         self.campaign_status = campaign_status(&self.player, self.market(), self.week);
         self.refresh_available_properties();
@@ -612,7 +624,8 @@ impl App {
                 format_money(current_net_worth)
             ),
             CampaignStatus::Failed => format!(
-                "Campaign failed after week 52. Final net worth: {}.",
+                "Campaign closed after week {}. Final net worth: {}.",
+                CAMPAIGN_MAX_WEEKS,
                 format_money(current_net_worth)
             ),
             CampaignStatus::Active => {
@@ -661,12 +674,13 @@ impl App {
             .iter()
             .map(|owned| owned.property.id)
             .collect();
-        self.available_properties = self
+        let mut schedule: Vec<Property> = self
             .data
             .properties
             .iter()
             .map(Property::from_template)
             .filter(|property| !owned_ids.contains(&property.id))
+            .filter(|property| !self.auctioned_property_ids.contains(&property.id))
             .filter(|property| {
                 suburb_is_unlocked(
                     &property.suburb,
@@ -676,5 +690,11 @@ impl App {
                 )
             })
             .collect();
+        if !schedule.is_empty() {
+            let rotation = (self.week.saturating_sub(1) as usize) % schedule.len();
+            schedule.rotate_left(rotation);
+            schedule.truncate(6);
+        }
+        self.available_properties = schedule;
     }
 }

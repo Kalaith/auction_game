@@ -88,3 +88,21 @@ fn starter_player_has_no_weekly_pressure() {
     assert_eq!(weekly_debt_interest(player.debt, &market(0.0)), 0);
     assert_eq!(weekly_holding_cost(&player), 0);
 }
+
+#[test]
+fn rent_offsets_interest_holding_and_management_before_cash_moves() {
+    let steady = market(0.0);
+    let mut player = Player::new();
+    let mut owned = owned_property(1);
+    owned.is_leased = true;
+    owned.weekly_rent = 550;
+    player.debt = owned.debt;
+    player.properties.push(owned);
+    let starting_cash = player.cash;
+
+    let pressure = apply_weekly_pressure(&mut player, &steady);
+    let expected_cash = starting_cash + pressure.rental_income - pressure.total;
+
+    assert_eq!(player.cash, expected_cash);
+    assert!(pressure.rental_operating_cost > 0);
+}

@@ -1,6 +1,7 @@
 use crate::app::{App, PurchaseDebrief};
 use crate::model::{
     Auction, CampaignStatus, ContractorTier, Player, PropertyId, ResearchReport, WalkawayStyle,
+    WEEKLY_AUCTION_REGISTRATIONS,
 };
 use crate::screens::Screen;
 use crate::sim::sale_sim::{MarketingPlan, SaleResult};
@@ -29,6 +30,10 @@ struct SaveGameState {
     listing_filter: usize,
     #[serde(default)]
     portfolio_index: usize,
+    #[serde(default = "default_auction_registrations")]
+    auction_registrations: u8,
+    #[serde(default)]
+    auctioned_property_ids: Vec<PropertyId>,
     walkaway_price: i64,
     walkaway_style: WalkawayStyle,
     status: String,
@@ -51,6 +56,8 @@ impl SaveGameState {
             campaign_status: app.campaign_status,
             listing_filter: app.listing_filter,
             portfolio_index: app.portfolio_index,
+            auction_registrations: app.auction_registrations,
+            auctioned_property_ids: app.auctioned_property_ids.clone(),
             walkaway_price: app.walkaway_price,
             walkaway_style: app.walkaway_style,
             status: app.status.clone(),
@@ -102,6 +109,8 @@ impl App {
         self.portfolio_index = save
             .portfolio_index
             .min(self.player.properties.len().saturating_sub(1));
+        self.auction_registrations = save.auction_registrations;
+        self.auctioned_property_ids = save.auctioned_property_ids;
         self.walkaway_price = save.walkaway_price;
         self.walkaway_style = save.walkaway_style;
         self.status = save.status;
@@ -120,4 +129,8 @@ impl App {
         }
         Ok(())
     }
+}
+
+fn default_auction_registrations() -> u8 {
+    WEEKLY_AUCTION_REGISTRATIONS
 }

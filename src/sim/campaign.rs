@@ -21,8 +21,8 @@ pub fn apply_weekly_pressure(player: &mut Player, market: &MarketEvent) -> Weekl
     let rental = apply_rental_income(player);
     let debt_interest = weekly_debt_interest(player.debt, market);
     let holding_cost = weekly_holding_cost(player);
-    let total = debt_interest + holding_cost;
-    let net_cost = total - rental.net_income;
+    let total = debt_interest + holding_cost + rental.operating_cost;
+    let net_cost = total - rental.gross_rent;
     let shortfall_added_to_debt = if net_cost <= 0 {
         player.cash += -net_cost;
         0

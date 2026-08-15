@@ -1,5 +1,6 @@
 pub mod auction;
 pub mod auction_widgets;
+pub mod briefing;
 pub mod dashboard;
 pub mod esc_menu;
 pub mod portfolio;
@@ -14,6 +15,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum Screen {
     Title,
+    Briefing,
     Dashboard,
     PropertyList,
     PropertyDetail(usize),

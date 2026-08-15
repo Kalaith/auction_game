@@ -1,6 +1,7 @@
 use crate::app::App;
 use crate::model::{
-    Property, CAMPAIGN_GOAL_NET_WORTH, CAMPAIGN_GOAL_PROPERTIES, CAMPAIGN_GOAL_WEEKLY_RENT,
+    CampaignStatus, Property, CAMPAIGN_GOAL_NET_WORTH, CAMPAIGN_GOAL_PROPERTIES,
+    CAMPAIGN_GOAL_WEEKLY_RENT,
 };
 use crate::screens::Screen;
 use crate::sim::campaign::{campaign_progress, next_unlock_note};
@@ -15,6 +16,10 @@ impl App {
         let top = 92.0;
         let width = ui_width() - margin * 2.0;
         let current_net_worth = net_worth(&self.player, self.market());
+        if self.campaign_status.is_finished() {
+            self.draw_campaign_conclusion(current_net_worth);
+            return;
+        }
 
         self.draw_dashboard_stats(margin, top, width, current_net_worth);
         self.draw_market_pulse(margin, top + 98.0, width, current_net_worth);
@@ -71,6 +76,100 @@ impl App {
         }
     }
 
+    fn draw_campaign_conclusion(&mut self, net_worth_value: i64) {
+        let won = self.campaign_status == CampaignStatus::Won;
+        let rental = crate::sim::rental::portfolio_rental_snapshot(&self.player);
+        let title = if won {
+            "Portfolio Established"
+        } else {
+            "The Bank Closes The Campaign"
+        };
+        let color = if won { POSITIVE } else { WARNING };
+        label(title, 80.0, 132.0, 38, TEXT_BRIGHT);
+        draw_wrapped_text(
+            if won {
+                "Three doors, dependable rent, and enough equity to keep growing: the first portfolio now works without pretending every auction was a win."
+            } else {
+                "Week 40 has passed without all three parts of the brief. Review the gap: more houses, more rent, or more equity."
+            },
+            82.0,
+            166.0,
+            ui_width() - 164.0,
+            19,
+            TEXT_DIM,
+        );
+
+        let panel = Rect::new(80.0, 218.0, ui_width() - 160.0, 260.0);
+        highlight_panel(panel);
+        label("FINAL LEDGER", panel.x + 22.0, panel.y + 34.0, 17, color);
+        let gap = 16.0;
+        let card_w = (panel.w - 76.0) / 3.0;
+        let stats = [
+            (
+                "Homes",
+                format!(
+                    "{} / {}",
+                    self.player.properties.len(),
+                    CAMPAIGN_GOAL_PROPERTIES
+                ),
+                "Portfolio doors".to_string(),
+            ),
+            (
+                "Weekly Rent",
+                format_money(rental.gross_rent),
+                format!("Goal {}", format_money(CAMPAIGN_GOAL_WEEKLY_RENT)),
+            ),
+            (
+                "Net Worth",
+                format_money(net_worth_value),
+                format!("Goal {}", format_money(CAMPAIGN_GOAL_NET_WORTH)),
+            ),
+        ];
+        for (index, (name, value, note)) in stats.iter().enumerate() {
+            draw_money_stat(
+                name,
+                value,
+                note,
+                Rect::new(
+                    panel.x + 22.0 + index as f32 * (card_w + gap),
+                    panel.y + 64.0,
+                    card_w,
+                    96.0,
+                ),
+                color,
+            );
+        }
+        label(
+            &format!(
+                "Cash {}  |  Debt {}  |  Reputation {:+}",
+                format_money(self.player.cash),
+                format_money(self.player.debt),
+                self.player.reputation
+            ),
+            panel.x + 24.0,
+            panel.y + 204.0,
+            18,
+            TEXT,
+        );
+
+        if button(
+            Rect::new(80.0, 516.0, 230.0, 48.0),
+            "REVIEW PORTFOLIO",
+            !self.player.properties.is_empty(),
+            ButtonTone::Secondary,
+        ) {
+            self.screen = Screen::Portfolio;
+        }
+        if button(
+            Rect::new(ui_width() - 330.0, 516.0, 250.0, 48.0),
+            "START NEW PORTFOLIO",
+            true,
+            ButtonTone::Primary,
+        ) {
+            self.start_new_game();
+        }
+    }
+
     fn draw_dashboard_stats(&self, x: f32, y: f32, width: f32, net_worth_value: i64) {
         let gap = 12.0;
         let card_w = (width - gap * 3.0) / 4.0;
@@ -105,7 +204,7 @@ impl App {
                 format_compact_money(weekly_rent),
                 format!(
                     "Goal {} | {reputation_note}",
-                    format_compact_money(CAMPAIGN_GOAL_WEEKLY_RENT)
+                    format_money(CAMPAIGN_GOAL_WEEKLY_RENT)
                 ),
                 crate::ui::BLUE,
             ),

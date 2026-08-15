@@ -236,6 +236,30 @@ pub(super) fn draw_upgrade_decision(
     )
 }
 
+pub(super) fn draw_skip_renovation(rect: Rect, owned: &OwnedProperty) {
+    soft_panel(rect);
+    label("Leave It Alone", rect.x + 16.0, rect.y + 30.0, 21, POSITIVE);
+    draw_wrapped_text(
+        "No available project earns back its cost on this home right now.",
+        rect.x + 16.0,
+        rect.y + 58.0,
+        rect.w - 32.0,
+        16,
+        TEXT_DIM,
+    );
+    label(
+        if owned.is_leased {
+            "The tenant is already making this asset work."
+        } else {
+            "Keep the cash for leasing or another deposit."
+        },
+        rect.x + 16.0,
+        rect.y + 112.0,
+        16,
+        POSITIVE,
+    );
+}
+
 pub(super) fn draw_hold_decision(
     rect: Rect,
     owned: &OwnedProperty,
@@ -246,6 +270,8 @@ pub(super) fn draw_hold_decision(
     label(
         if active.is_some() {
             "Advance Work"
+        } else if owned.is_leased {
+            "Collect Rent & Hold"
         } else {
             "Hold 1 Week"
         },
@@ -273,7 +299,8 @@ pub(super) fn draw_hold_decision(
     );
     label(
         &format!(
-            "Cost {}",
+            "Rent {} | property cost {}",
+            format_money(owned.weekly_rent),
             format_money(owned.property.holding_cost_per_week)
         ),
         rect.x + 16.0,
@@ -309,7 +336,11 @@ pub(super) fn draw_lease_decision(
         TEXT_BRIGHT,
     );
     draw_wrapped_text(
-        "Advertise the home and turn this purchase into a working portfolio asset.",
+        if locked {
+            "Finish active work or repair the known defect before placing a tenant."
+        } else {
+            "Advertise the home and turn this purchase into a working portfolio asset."
+        },
         rect.x + 16.0,
         rect.y + 58.0,
         rect.w - 32.0,
@@ -332,7 +363,7 @@ pub(super) fn draw_lease_decision(
     );
     button(
         Rect::new(rect.x + rect.w - 124.0, rect.y + rect.h - 46.0, 104.0, 34.0),
-        "Lease",
+        if locked { "Repair First" } else { "Lease" },
         !locked && cash >= leasing_cost,
         ButtonTone::Primary,
     )
@@ -443,18 +474,13 @@ pub(super) fn recommended_upgrade<'a>(
             let score = treatment_score(owned, upgrade, &quote);
             (upgrade, quote, score)
         })
+        .filter(|(_, quote, score)| *score > 0 && quote.net_effect > 0)
         .max_by_key(|(_, _, score)| *score)
         .map(|(upgrade, quote, _)| (upgrade, quote))
 }
 
 pub(super) fn draw_contractor_selector(app: &mut App, main: Rect, locked: bool) {
-    label(
-        "Contractor",
-        main.x + 18.0,
-        ui_height() - 60.0,
-        16,
-        TEXT_DIM,
-    );
+    label("Contractor", main.x + 370.0, main.y + 266.0, 16, TEXT_DIM);
     let options = [
         ContractorTier::Budget,
         ContractorTier::Reliable,
@@ -464,8 +490,8 @@ pub(super) fn draw_contractor_selector(app: &mut App, main: Rect, locked: bool) 
         let selected = app.selected_contractor == *tier;
         if button(
             Rect::new(
-                main.x + 116.0 + index as f32 * 82.0,
-                ui_height() - 82.0,
+                main.x + 468.0 + index as f32 * 82.0,
+                main.y + 240.0,
                 76.0,
                 30.0,
             ),
@@ -484,13 +510,7 @@ pub(super) fn draw_contractor_selector(app: &mut App, main: Rect, locked: bool) 
 }
 
 pub(super) fn draw_marketing_selector(app: &mut App, main: Rect, owned: &OwnedProperty) {
-    label(
-        "Marketing",
-        main.x + 408.0,
-        ui_height() - 60.0,
-        16,
-        TEXT_DIM,
-    );
+    label("Marketing", main.x + 820.0, main.y + 266.0, 16, TEXT_DIM);
     let options = [
         MarketingPlan::Budget,
         MarketingPlan::Standard,
@@ -500,8 +520,8 @@ pub(super) fn draw_marketing_selector(app: &mut App, main: Rect, owned: &OwnedPr
         let selected = app.selected_marketing_plan == *plan;
         if button(
             Rect::new(
-                main.x + 508.0 + index as f32 * 96.0,
-                ui_height() - 82.0,
+                main.x + 920.0 + index as f32 * 96.0,
+                main.y + 240.0,
                 88.0,
                 30.0,
             ),

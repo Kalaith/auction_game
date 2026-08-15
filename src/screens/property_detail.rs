@@ -2,6 +2,7 @@ use crate::app::App;
 use crate::model::{Property, ResearchLevel, WalkawayStyle};
 use crate::screens::Screen;
 use crate::sim::finance::finance_snapshot;
+use crate::sim::rental::weekly_rent_for;
 use crate::sim::research::{
     comparable_sale_value, due_diligence_note, estimate_reserve, recommended_walkaway,
     research_cost, research_fit_summary, research_question, research_takeaway,
@@ -67,7 +68,7 @@ impl App {
             TEXT_DIM,
         );
 
-        let decision = Rect::new(552.0, 122.0, ui_width() - 580.0, 352.0);
+        let decision = Rect::new(552.0, 122.0, ui_width() - 580.0, 416.0);
         soft_panel(decision);
         draw_detail_summary(self, decision, &property, research_level);
 
@@ -113,6 +114,8 @@ fn draw_detail_summary(app: &App, rect: Rect, property: &Property, research_leve
         app.player.reputation,
     );
     let margin = projected_purchase_margin(property, walkaway, app.market());
+    let weekly_rent = weekly_rent_for(property, app.market());
+    let gross_yield = weekly_rent as f32 * 52.0 / walkaway.max(1) as f32 * 100.0;
 
     draw_badge(
         property.deal_archetype.label(),
@@ -153,19 +156,10 @@ fn draw_detail_summary(app: &App, rect: Rect, property: &Property, research_leve
         23,
         TEXT_BRIGHT,
     );
-    label(
+    label_fit(
         &format!(
-            "Nearest comp: {}",
-            format_money(comparable_sale_value(property, app.market(), 0))
-        ),
-        rect.x + 22.0,
-        rect.y + 206.0,
-        14,
-        TEXT_DIM,
-    );
-    label(
-        &format!(
-            "Reserve read: {}",
+            "Comp {}  |  Reserve read {}",
+            format_money(comparable_sale_value(property, app.market(), 0)),
             format_money(estimate_reserve(
                 property,
                 app.market(),
@@ -174,9 +168,26 @@ fn draw_detail_summary(app: &App, rect: Rect, property: &Property, research_leve
             ))
         ),
         rect.x + 22.0,
-        rect.y + 226.0,
+        rect.y + 206.0,
+        330.0,
         14,
         TEXT_DIM,
+    );
+    label_fit(
+        &format!(
+            "Rent {} / wk  |  {:.1}% gross at walk-away",
+            format_money(weekly_rent),
+            gross_yield
+        ),
+        rect.x + 22.0,
+        rect.y + 226.0,
+        330.0,
+        14,
+        if gross_yield >= 5.0 {
+            POSITIVE
+        } else {
+            WARNING
+        },
     );
 
     label(
@@ -350,7 +361,7 @@ fn draw_walkaway_panel(app: &mut App, rect: Rect, property: &Property) {
     );
     label(
         &format!(
-            "Cash if won: {} | Margin: {} | Bank room: {}",
+            "Cash to settle: {} | Margin: {} | Bank room: {}",
             format_money(cash_needed_to_settle(app.walkaway_price)),
             format_money(margin),
             format_money(finance.headroom_after)
@@ -376,13 +387,27 @@ fn draw_walkaway_panel(app: &mut App, rect: Rect, property: &Property) {
     ) {
         app.walkaway_price += 10_000;
     }
+    let can_register = app.auction_registrations > 0;
     if button(
         Rect::new(rect.x + rect.w - 220.0, rect.y + 18.0, 190.0, 52.0),
-        "Register To Bid",
+        if can_register {
+            "REGISTER TO BID"
+        } else {
+            "VIEW DASHBOARD"
+        },
         true,
-        ButtonTone::Primary,
+        if can_register {
+            ButtonTone::Primary
+        } else {
+            ButtonTone::Secondary
+        },
     ) {
-        app.start_auction(property.id);
+        if can_register {
+            app.start_auction(property.id);
+        } else {
+            app.screen = Screen::Dashboard;
+            app.status = "Tap ADVANCE WEEK to refresh your two registrations.".to_string();
+        }
     }
 }
 

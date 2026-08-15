@@ -1,16 +1,18 @@
 # TODO — Auction House Tycoon
 
-## Auction tension
+## Portfolio depth
 
-- Rival bidders routinely run past the profitable ceiling, so early lots read as unwinnable unless the player overpays; retune `auction_bidders` aggression against reserve and appraised value.
-- Give bidding tactics weight — a jump bid should visibly rattle or embolden rivals rather than just advancing the price.
-- Let the schedule occasionally offer a genuine bargain so patience and walking away are rewarded.
-- Make going over budget pay off sometimes, so the decision is a gamble rather than a tax.
+- Add voluntary tenancy endings so a leased property can later return to renovation without being sold.
+- Add rare, forecastable maintenance events after several weeks of ownership.
+- Add a compact campaign-end debrief comparing purchase discipline, rent, realised profit, and unused registrations.
+
+## Auction depth
+
+- Add vendor bids and on-market announcements as distinct auctioneer events.
+- Let full diligence reveal one rival likely to attend the auction.
+- Add deterministic coverage for NPC-to-NPC hammer outcomes and all emotional stretch archetypes.
 
 ## Presentation
 
-- The screens read flat; the auction needs pacing, callouts, and rival reactions to carry the tension the sim already produces.
-
-## Testing
-
-- `src/sim/auction_sim.rs` and `src/sim/auction_bidders.rs` have no tests. Add deterministic coverage for tied bids, last-moment bids, pass-in below reserve, and bidder budget ceilings.
+- Add unique procedural facade details for premium, unit, and large-block properties.
+- Capture a populated three-property portfolio once the screenshot harness supports scripted input sequences.

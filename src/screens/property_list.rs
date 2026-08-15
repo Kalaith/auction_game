@@ -16,7 +16,15 @@ impl App {
     pub(crate) fn draw_property_list(&mut self) {
         label("Auction Listings", 28.0, 106.0, 30, TEXT_BRIGHT);
         label(
-            "Pick the auction that deserves your attention this week.",
+            &format!(
+                "Saturday schedule: {} registration{} left. Research before you spend one.",
+                self.auction_registrations,
+                if self.auction_registrations == 1 {
+                    ""
+                } else {
+                    "s"
+                }
+            ),
             30.0,
             134.0,
             18,

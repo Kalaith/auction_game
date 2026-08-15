@@ -23,7 +23,7 @@ impl App {
 
         if button(
             Rect::new(button_x, y, button_w, 48.0),
-            "New Game",
+            "Start A Portfolio",
             true,
             ButtonTone::Primary,
         ) {

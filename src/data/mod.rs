@@ -17,3 +17,6 @@ impl GameData {
         .expect("assets/game_data.json should be valid game data")
     }
 }
+
+#[cfg(test)]
+mod tests;
