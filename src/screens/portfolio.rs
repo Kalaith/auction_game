@@ -32,6 +32,7 @@ impl App {
             .portfolio_index
             .min(self.player.properties.len().saturating_sub(1));
         let rental = portfolio_rental_snapshot(&self.player);
+        let portfolio_has_due_review = self.player.properties.iter().any(rent_review_due);
         let portfolio_cashflow = rental.gross_rent
             - rental.operating_cost
             - weekly_debt_interest(self.player.debt, self.market())
@@ -280,7 +281,7 @@ impl App {
                 hold_rect,
                 &owned,
                 property_cashflow(&owned, self.market()).net_cashflow,
-                rent_review_due(&owned),
+                portfolio_has_due_review,
                 self.campaign_status.is_finished(),
             ) {
                 hold_week = true;

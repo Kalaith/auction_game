@@ -13,7 +13,7 @@ use crate::sim::maintenance::trigger_due_maintenance;
 use crate::sim::renovation::{
     progress_player_renovations, quote_renovation, start_upgrade_project,
 };
-use crate::sim::rental::progress_leasing_campaigns;
+use crate::sim::rental::{progress_leasing_campaigns, rent_review_due};
 use crate::sim::research::{recommended_walkaway, research_cost};
 use crate::sim::sale_sim::{simulate_sale, MarketingPlan, ReserveChoice, SaleResult};
 use crate::sim::valuation::{
@@ -612,6 +612,15 @@ impl App {
     pub(crate) fn advance_week(&mut self) {
         if self.campaign_status.is_finished() {
             self.status = format!("{}.", self.campaign_status.label());
+            return;
+        }
+        if let Some(index) = self.player.properties.iter().position(rent_review_due) {
+            self.portfolio_index = index;
+            self.screen = Screen::Portfolio;
+            self.status = format!(
+                "Resolve the rent review at {} before advancing the week.",
+                self.player.properties[index].property.address
+            );
             return;
         }
 

@@ -340,7 +340,7 @@ pub(super) fn draw_hold_decision(
     rect: Rect,
     owned: &OwnedProperty,
     weekly_cashflow: i64,
-    review_due: bool,
+    portfolio_review_due: bool,
     campaign_finished: bool,
 ) -> bool {
     soft_panel(rect);
@@ -413,14 +413,14 @@ pub(super) fn draw_hold_decision(
     }
     button(
         Rect::new(rect.x + rect.w - 124.0, rect.y + rect.h - 46.0, 104.0, 34.0),
-        if review_due {
+        if portfolio_review_due {
             "Review First"
         } else if active.is_some() {
             "Next Week"
         } else {
             "Hold"
         },
-        !campaign_finished && !review_due,
+        !campaign_finished && !portfolio_review_due,
         ButtonTone::Secondary,
     )
 }

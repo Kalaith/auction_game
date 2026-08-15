@@ -46,6 +46,7 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - Completed improvements raise the next rent appraisal; an existing tenancy can be ended for one week's rent to reopen renovation.
 - Leasing requires an upfront two-week letting fee and one vacant campaign week; the tenancy starts only after that week's ownership and interest costs close.
 - New tenancies reach a review every eight held weeks. Renewing preserves occupancy; testing a higher market rent can improve income or send a low-demand tenant out, requiring another leasing campaign.
+- A due review pauses week advancement from every screen and routes the player to the affected tenancy, so the decision cannot be bypassed through another holding.
 - Rent supports cashflow and borrowing capacity, but debt, ownership costs, and scheduled maintenance remain visible.
 - Spare cash can reduce a selected property's principal, trading liquidity for lower debt and more bank headroom.
 - A clean, leased home held for four weeks can release equity up to 80% LVR and the bank limit; the cash funds growth while debt and interest rise.
