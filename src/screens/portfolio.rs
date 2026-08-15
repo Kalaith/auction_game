@@ -2,11 +2,11 @@ use crate::app::App;
 use crate::model::PropertyId;
 use crate::screens::portfolio_finance_widgets::{draw_loan_control, LoanAction};
 use crate::screens::portfolio_rent_review::{draw_rent_review_decision, RentReviewChoice};
+use crate::screens::portfolio_sale_widgets::{draw_marketing_selector, draw_sell_decision};
 use crate::screens::portfolio_widgets::{
     draw_active_project_decision, draw_contractor_selector, draw_empty_portfolio,
-    draw_hold_decision, draw_lease_decision, draw_maintenance_decision, draw_marketing_selector,
-    draw_problem_card, draw_rental_campaign, draw_sell_decision, draw_skip_renovation,
-    draw_upgrade_decision, recommended_upgrade,
+    draw_hold_decision, draw_lease_decision, draw_maintenance_decision, draw_problem_card,
+    draw_rental_campaign, draw_skip_renovation, draw_upgrade_decision, recommended_upgrade,
 };
 use crate::sim::campaign::{annual_interest_rate_percent, portfolio_weekly_cashflow};
 use crate::sim::finance::{borrowing_limit, property_cashflow, refinance_capacity};
