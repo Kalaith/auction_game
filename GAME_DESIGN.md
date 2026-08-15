@@ -32,6 +32,7 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - The vendor's true reserve stays hidden; research provides an estimate and the auctioneer announces when bidding crosses the real line.
 - One declared vendor bid may move the auction below reserve, but can never buy the property or put it on the market.
 - A pass-in moves to a private vendor counteroffer below reserve; accepting still requires finance and can still violate the player's walk-away.
+- A hammer win requires a 10% contract deposit plus separately visible acquisition costs; both are included in settlement cash and the deal remains unconditional.
 - ASSERT is theatre with asymmetric consequences: it discourages rational buyers and can provoke emotional ones.
 - First-home buyers stretch near the final call, renovators stretch for damaged upside in emotional rooms, and ego bidders stretch when counter-bidding becomes personal; each exposes a distinct live tell while rational bidders keep their ceiling.
 - Each auction owns a serialized random stream, so saving and reloading cannot reroll rival reactions or auctioneer timing.

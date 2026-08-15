@@ -35,10 +35,7 @@ pub(super) fn draw_auction_day_lobby(
     let rows = [
         ("Opening call", auction.current_bid),
         ("Your walk-away", auction.player_walkaway_price),
-        (
-            "Deposit at your cap",
-            deposit(auction.player_walkaway_price),
-        ),
+        ("10% deposit at cap", deposit(auction.player_walkaway_price)),
         ("Cash to settle at cap", costs_at_cap),
         ("Cash left at cap", finance_at_cap.cash_after_settle),
         ("Bank room at cap", finance_at_cap.headroom_after),

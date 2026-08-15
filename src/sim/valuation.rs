@@ -1,6 +1,6 @@
 use crate::model::{DealArchetype, MarketEvent, OwnedProperty, Player, Property};
 
-pub const DEPOSIT_RATE: f32 = 0.12;
+pub const DEPOSIT_RATE: f32 = 0.10;
 pub const BUYER_FEE_RATE: f32 = 0.038;
 pub const SELLING_FEE_RATE: f32 = 0.022;
 
