@@ -194,15 +194,15 @@ impl App {
     fn draw_header(&mut self) {
         draw_rectangle(0.0, 0.0, ui_width(), 68.0, PANEL_DARK);
         if button(
-            Rect::new(16.0, 16.0, 36.0, 36.0),
-            "\u{2699}",
+            Rect::new(16.0, 16.0, 64.0, 36.0),
+            "Menu",
             true,
             ButtonTone::Ghost,
         ) {
             self.esc_menu_open = !self.esc_menu_open;
             self.esc_settings_open = false;
         }
-        label("Auction House Tycoon", 68.0, 42.0, 30, TEXT_BRIGHT);
+        label("Auction House Tycoon", 94.0, 42.0, 30, TEXT_BRIGHT);
         label(&format!("Week {}", self.week), 430.0, 41.0, 19, TEXT_DIM);
         label(
             &format!("Registrations {}/2", self.auction_registrations),

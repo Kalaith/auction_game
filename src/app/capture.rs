@@ -21,6 +21,17 @@ impl App {
                 self.status =
                     "Choose a listing worth one of this week's registrations.".to_string();
             }
+            "menu" => {
+                self.start_new_game();
+                self.screen = Screen::Dashboard;
+                self.esc_menu_open = true;
+            }
+            "menu_settings" => {
+                self.start_new_game();
+                self.screen = Screen::Dashboard;
+                self.esc_menu_open = true;
+                self.esc_settings_open = true;
+            }
             "listings" => {
                 self.start_new_game();
                 self.screen = Screen::PropertyList;
@@ -203,6 +214,7 @@ impl App {
                 self.seed_portfolio_capture();
                 if let Some(removed) = self.player.properties.pop() {
                     self.player.debt -= removed.debt;
+                    self.player.career.homes_bought -= 1;
                 }
                 self.screen = Screen::Dashboard;
                 self.advance_week();
@@ -214,6 +226,7 @@ impl App {
                 self.seed_portfolio_capture();
                 if let Some(removed) = self.player.properties.pop() {
                     self.player.debt -= removed.debt;
+                    self.player.career.homes_bought -= 1;
                 }
                 self.player.cash = 50;
                 self.screen = Screen::Dashboard;
@@ -335,6 +348,7 @@ impl App {
                 self.player.career.homes_sold = 1;
                 self.player.career.realized_profit = 38_000;
                 self.player.career.unused_registrations = 7;
+                self.player.reputation = 6;
                 self.auction_registrations = 0;
                 self.campaign_status = CampaignStatus::Won;
                 self.screen = Screen::Dashboard;
@@ -358,6 +372,7 @@ impl App {
                 self.player.career.homes_bought = 2;
                 self.player.career.disciplined_walkaways = 5;
                 self.player.career.unused_registrations = 12;
+                self.player.reputation = 5;
                 self.auction_registrations = 0;
                 self.week = 25;
                 self.campaign_status = CampaignStatus::Failed;
@@ -366,10 +381,7 @@ impl App {
                     "Season closed. Read the binding constraint before starting again.".to_string();
             }
             "title" => {}
-            _ => {
-                self.start_new_game();
-                self.screen = Screen::Dashboard;
-            }
+            unknown => panic!("unknown capture scene: {unknown}"),
         }
     }
 
@@ -385,6 +397,8 @@ impl App {
         for property in samples {
             self.seed_owned_property(property);
         }
+        self.player.career.auctions_attended = self.player.properties.len() as u32;
+        self.player.career.homes_bought = self.player.properties.len() as u32;
     }
 
     fn seed_property_detail_capture(&mut self, property_id: usize) {

@@ -8,8 +8,8 @@ impl App {
     pub(crate) fn draw_esc_menu(&mut self) {
         draw_rectangle(0.0, 0.0, ui_width(), ui_height(), MENU_SHADE);
         if button(
-            Rect::new(16.0, 16.0, 36.0, 36.0),
-            "\u{2699}",
+            Rect::new(16.0, 16.0, 64.0, 36.0),
+            "Close",
             true,
             ButtonTone::Secondary,
         ) {
