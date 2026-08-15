@@ -1,4 +1,5 @@
 use super::*;
+use crate::data::GameData;
 use crate::model::{
     Condition, DealArchetype, OwnedProperty, Player, Property, ResearchLevel, WalkawayStyle,
 };
@@ -105,4 +106,62 @@ fn rent_offsets_interest_holding_and_management_before_cash_moves() {
 
     assert_eq!(player.cash, expected_cash);
     assert!(pressure.rental_operating_cost > 0);
+}
+
+#[test]
+fn a_disciplined_three_rental_path_can_complete_the_real_campaign() {
+    let data = GameData::load();
+    let market = &data.market_events[0];
+    let mut player = Player::new();
+
+    for id in [6, 8] {
+        acquire_authored_rental(&data, &mut player, id, market);
+    }
+    player.reputation = 3;
+    acquire_authored_rental(&data, &mut player, 5, market);
+
+    assert!(
+        crate::sim::rental::portfolio_rental_snapshot(&player).gross_rent
+            >= CAMPAIGN_GOAL_WEEKLY_RENT
+    );
+    let worth = crate::sim::valuation::net_worth(&player, market);
+    assert!(
+        worth >= CAMPAIGN_GOAL_NET_WORTH,
+        "three-rental path finished at {worth} net worth"
+    );
+    assert_eq!(campaign_status(&player, market, 12), CampaignStatus::Won);
+}
+
+fn acquire_authored_rental(
+    data: &GameData,
+    player: &mut Player,
+    property_id: usize,
+    market: &MarketEvent,
+) {
+    let property = Property::from_template(
+        data.properties
+            .iter()
+            .find(|property| property.id == property_id)
+            .expect("authored campaign property should exist"),
+    );
+    let price = property.reserve_price - 10_000;
+    assert!(crate::sim::finance::finance_snapshot(player, market, price).can_buy);
+    let property_deposit = crate::sim::valuation::deposit(price);
+    let property_debt = price - property_deposit;
+    player.cash -= crate::sim::valuation::cash_needed_to_settle(price);
+    player.debt += property_debt;
+    let mut owned = OwnedProperty::new(
+        property,
+        price,
+        crate::sim::valuation::purchase_fees(price),
+        property_deposit,
+        property_debt,
+        price,
+        ResearchLevel::BuildingInspection,
+        WalkawayStyle::Balanced,
+    );
+    owned.is_leased = true;
+    owned.weekly_rent = crate::sim::rental::weekly_rent_for_owned(&owned, market);
+    player.cash -= crate::sim::rental::leasing_cost(owned.weekly_rent);
+    player.properties.push(owned);
 }

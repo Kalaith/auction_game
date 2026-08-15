@@ -60,7 +60,7 @@ impl App {
             ),
             (
                 "2  SET YOUR LIMIT",
-                "Choose a walk-away price before the auctioneer starts creating urgency.",
+                "Choose a walk-away price, register, review the binding terms, then tap START AUCTION CALLS.",
                 POSITIVE,
             ),
             (

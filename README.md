@@ -27,6 +27,8 @@ Winning an auction is not automatically good. The real challenge is knowing what
 
 Before week 24, own three homes, earn $1,500 in weekly rent, and hold $240,000 net worth. A player usually needs both patient rental acquisitions and at least one value-creating sale or renovation to get there.
 
+The campaign closes as soon as all three conditions are true—there is no need to advance another week and pay another round of holding costs. The authored economy includes a tested route through three disciplined, income-focused purchases, while stronger renovation and resale decisions create alternate routes.
+
 ## Controls
 
 - Mouse/touch: every required action has a visible button or property card.

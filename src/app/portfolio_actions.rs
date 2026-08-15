@@ -70,6 +70,7 @@ impl App {
             format_money(rent),
             format_money(fee)
         );
+        self.refresh_campaign_outcome();
     }
 
     pub(crate) fn end_property_tenancy(&mut self, property_id: PropertyId) {
@@ -121,5 +122,6 @@ impl App {
             issue_name,
             format_money(cost)
         );
+        self.refresh_campaign_outcome();
     }
 }

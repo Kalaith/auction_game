@@ -155,6 +155,24 @@ impl App {
         &self.data.market_events[self.market_index]
     }
 
+    pub(crate) fn refresh_campaign_outcome(&mut self) -> bool {
+        if self.campaign_status.is_finished() {
+            return self.campaign_status == CampaignStatus::Won;
+        }
+        let outcome = campaign_status(&self.player, self.market(), self.week);
+        self.campaign_status = outcome;
+        if outcome == CampaignStatus::Won {
+            self.status = format!(
+                "Portfolio established in week {} with {} net worth. Tap DASHBOARD for the final ledger.",
+                self.week,
+                format_money(net_worth(&self.player, self.market()))
+            );
+            true
+        } else {
+            false
+        }
+    }
+
     pub(crate) fn research_level(&self, property_id: PropertyId) -> ResearchLevel {
         self.research_reports
             .get(&property_id)
@@ -400,6 +418,7 @@ impl App {
         self.current_auction = None;
         self.screen = Screen::Portfolio;
         self.status = "Property settled. Check the margin before buying upgrades.".to_string();
+        self.refresh_campaign_outcome();
     }
 
     pub(crate) fn buy_upgrade(&mut self, property_id: PropertyId, upgrade_id: &str) {
