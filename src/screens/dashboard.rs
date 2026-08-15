@@ -178,16 +178,27 @@ impl App {
         );
         label(
             &format!(
-                "Auction record: {} attended  |  {} bought ({} after pass-in)  |  {} disciplined exits  |  {} sold  |  realized {}",
+                "Auction room: {} attended  |  {} bought ({} after pass-in)  |  {} disciplined exits  |  {} registrations passed",
                 self.player.career.auctions_attended,
                 self.player.career.homes_bought,
                 self.player.career.post_auction_buys,
                 self.player.career.disciplined_walkaways,
-                self.player.career.homes_sold,
-                signed_money(self.player.career.realized_profit)
+                self.player.career.unused_registrations,
             ),
             panel.x + 24.0,
-            panel.y + 238.0,
+            panel.y + 232.0,
+            15,
+            TEXT_DIM,
+        );
+        label(
+            &format!(
+                "Portfolio exits: {} sold  |  realized {}  |  final rent {} / week",
+                self.player.career.homes_sold,
+                signed_money(self.player.career.realized_profit),
+                format_money(rental.gross_rent)
+            ),
+            panel.x + 24.0,
+            panel.y + 252.0,
             15,
             TEXT_DIM,
         );

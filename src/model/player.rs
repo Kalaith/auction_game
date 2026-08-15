@@ -36,6 +36,14 @@ pub struct CareerRecord {
     pub post_auction_buys: u32,
     pub homes_sold: u32,
     pub realized_profit: i64,
+    #[serde(default)]
+    pub unused_registrations: u32,
+}
+
+impl CareerRecord {
+    pub fn record_unused_registrations(&mut self, unused: u8) {
+        self.unused_registrations += u32::from(unused.min(2));
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

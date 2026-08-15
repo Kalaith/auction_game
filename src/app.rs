@@ -162,6 +162,10 @@ impl App {
         let outcome = campaign_status(&self.player, self.market(), self.week);
         self.campaign_status = outcome;
         if outcome == CampaignStatus::Won {
+            self.player
+                .career
+                .record_unused_registrations(self.auction_registrations);
+            self.auction_registrations = 0;
             self.status = format!(
                 "Portfolio established in week {} with {} net worth. Tap DASHBOARD for the final ledger.",
                 self.week,
@@ -531,6 +535,10 @@ impl App {
         let current_net_worth = net_worth(&self.player, self.market());
         self.campaign_status = campaign_status(&self.player, self.market(), self.week);
         if self.campaign_status == CampaignStatus::Won {
+            self.player
+                .career
+                .record_unused_registrations(self.auction_registrations);
+            self.auction_registrations = 0;
             self.status = format!(
                 "Campaign won with {} net worth. Review the sale result.",
                 format_money(current_net_worth)
@@ -601,15 +609,21 @@ impl App {
         }
 
         let market = self.market().clone();
+        self.player
+            .career
+            .record_unused_registrations(self.auction_registrations);
+        self.auction_registrations = 0;
         let pressure = apply_weekly_pressure(&mut self.player, &market);
         self.last_weekly_pressure = Some(pressure.clone());
         let completed_jobs = progress_player_renovations(&mut self.player);
         let maintenance_notices = trigger_due_maintenance(&mut self.player);
         self.week += 1;
         self.market_index = ((self.week - 1) as usize) % self.data.market_events.len();
-        self.auction_registrations = WEEKLY_AUCTION_REGISTRATIONS;
         let current_net_worth = net_worth(&self.player, self.market());
         self.campaign_status = campaign_status(&self.player, self.market(), self.week);
+        if self.campaign_status == CampaignStatus::Active {
+            self.auction_registrations = WEEKLY_AUCTION_REGISTRATIONS;
+        }
         self.refresh_available_properties();
         self.status = match self.campaign_status {
             CampaignStatus::Won => format!(

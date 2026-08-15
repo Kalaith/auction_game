@@ -17,6 +17,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - Hear a legal vendor bid below the hidden reserve and the auctioneer's decisive on-market call.
 - Negotiate a visible vendor counteroffer after a pass-in, or leave the private deal untouched.
 - Build a season record that credits disciplined exits alongside purchases and profitable sales.
+- Close each season with the registrations deliberately passed up, final rent, realised sale profit, and auction record visible together.
 - Pay down individual property loans when freeing bank headroom matters more than keeping cash liquid.
 - Refinance seasoned rental equity to fund another deposit without selling the home.
 - Read the seller-side auction ledger: reserve, bidder depth, debt cleared, settlement release, and true profit.

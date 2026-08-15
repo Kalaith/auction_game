@@ -177,6 +177,8 @@ impl App {
                 self.player.career.post_auction_buys = 1;
                 self.player.career.homes_sold = 1;
                 self.player.career.realized_profit = 38_000;
+                self.player.career.unused_registrations = 7;
+                self.auction_registrations = 0;
                 self.campaign_status = CampaignStatus::Won;
                 self.screen = Screen::Dashboard;
                 self.status =
@@ -198,6 +200,8 @@ impl App {
                 self.player.career.auctions_attended = 11;
                 self.player.career.homes_bought = 2;
                 self.player.career.disciplined_walkaways = 5;
+                self.player.career.unused_registrations = 12;
+                self.auction_registrations = 0;
                 self.week = 25;
                 self.campaign_status = CampaignStatus::Failed;
                 self.screen = Screen::Dashboard;

@@ -13,6 +13,11 @@ mod ui;
 
 use app::App;
 
+const UI_FONT_SIZES: &[u16] = &[
+    12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 30, 31, 32, 34, 35, 38, 42,
+    44, 74,
+];
+
 fn window_conf() -> Conf {
     // Hand-built Conf means no automatic arming: without this the capture run
     // puts a full game window on the desktop for its whole duration.
@@ -34,14 +39,18 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    macroquad_toolkit::ui::prewarm_default_ui_font(&[
-        12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 30, 31, 32, 34, 35, 38,
-        42, 44, 74,
-    ])
-    .expect("toolkit UI font should prewarm");
+    macroquad_toolkit::ui::prewarm_default_ui_font(UI_FONT_SIZES)
+        .expect("toolkit UI font should prewarm");
     let title_background =
         Texture2D::from_file_with_format(include_bytes!("../auction_house_title.png"), None);
     let mut app = App::new(title_background);
+
+    // Present the populated font atlas before any dense UI frame is batched.
+    // Macroquad otherwise lets the first screen share a frame with atlas uploads,
+    // which can leave stale glyph coordinates after the texture grows.
+    clear_background(crate::ui::BACKGROUND);
+    macroquad_toolkit::ui::draw_default_ui_font_atlas_warmup(UI_FONT_SIZES);
+    next_frame().await;
 
     // Screenshot harness: when AUCTION_GAME_CAPTURE_PATH is set, seed a scene,
     // simulate deterministic frames, write a PNG, and exit.
