@@ -14,6 +14,12 @@ impl App {
     pub fn begin_capture_scene(&mut self, scene: &str) {
         match scene {
             "briefing" => self.start_new_game(),
+            "dashboard" => {
+                self.start_new_game();
+                self.screen = Screen::Dashboard;
+                self.status =
+                    "Choose a listing worth one of this week's registrations.".to_string();
+            }
             "listings" => {
                 self.start_new_game();
                 self.screen = Screen::PropertyList;
@@ -85,6 +91,14 @@ impl App {
                 self.status =
                     "Compare the selected home's cashflow, debt, condition, and next move."
                         .to_string();
+            }
+            "dashboard_weekly" => {
+                self.start_new_game();
+                self.seed_portfolio_capture();
+                self.screen = Screen::Dashboard;
+                self.advance_week();
+                self.screen = Screen::Dashboard;
+                self.status = "Week closed. Compare rent against every portfolio cost.".to_string();
             }
             "portfolio_maintenance" => {
                 self.start_new_game();

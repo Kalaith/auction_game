@@ -4,6 +4,7 @@ use crate::model::{
     WEEKLY_AUCTION_REGISTRATIONS,
 };
 use crate::screens::Screen;
+use crate::sim::campaign::WeeklyPressure;
 use crate::sim::sale_sim::{MarketingPlan, SaleResult};
 use macroquad::prelude::set_fullscreen;
 use macroquad_toolkit::persistence::{load_from_slot, save_to_slot};
@@ -22,6 +23,8 @@ struct SaveGameState {
     current_auction: Option<Auction>,
     purchase_debrief: Option<PurchaseDebrief>,
     sale_result: Option<SaleResult>,
+    #[serde(default)]
+    last_weekly_pressure: Option<WeeklyPressure>,
     research_reports: HashMap<PropertyId, ResearchReport>,
     selected_contractor: ContractorTier,
     #[serde(default)]
@@ -50,6 +53,7 @@ impl SaveGameState {
             current_auction: app.current_auction.clone(),
             purchase_debrief: app.purchase_debrief.clone(),
             sale_result: app.sale_result.clone(),
+            last_weekly_pressure: app.last_weekly_pressure.clone(),
             research_reports: app.research_reports.clone(),
             selected_contractor: app.selected_contractor,
             selected_marketing_plan: app.selected_marketing_plan,
@@ -101,6 +105,7 @@ impl App {
         self.current_auction = save.current_auction;
         self.purchase_debrief = save.purchase_debrief;
         self.sale_result = save.sale_result;
+        self.last_weekly_pressure = save.last_weekly_pressure;
         self.research_reports = save.research_reports;
         self.selected_contractor = save.selected_contractor;
         self.selected_marketing_plan = save.selected_marketing_plan;

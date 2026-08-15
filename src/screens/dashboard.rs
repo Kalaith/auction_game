@@ -22,7 +22,14 @@ impl App {
         }
 
         self.draw_dashboard_stats(margin, top, width, current_net_worth);
-        self.draw_market_pulse(margin, top + 98.0, width, current_net_worth);
+        let pulse_gap = 14.0;
+        let pulse_width = width * 0.59;
+        self.draw_market_pulse(margin, top + 98.0, pulse_width, current_net_worth);
+        self.draw_weekly_statement(
+            margin + pulse_width + pulse_gap,
+            top + 98.0,
+            width - pulse_width - pulse_gap,
+        );
 
         label(
             "Featured Opportunities",
@@ -282,13 +289,80 @@ impl App {
             Color::new(ACCENT.r * 0.20, ACCENT.g * 0.16, ACCENT.b * 0.08, 1.0),
         );
         label("NEXT", unlock.x + 12.0, unlock.y + 17.0, 14, ACCENT);
-        label(
+        label_fit(
             next_unlock_note(self.week, net_worth_value, self.player.reputation),
             unlock.x + 70.0,
             unlock.y + 17.0,
+            unlock.w - 82.0,
             14,
             TEXT_DIM,
         );
+    }
+
+    fn draw_weekly_statement(&self, x: f32, y: f32, width: f32) {
+        let rect = Rect::new(x, y, width, 158.0);
+        soft_panel(rect);
+        label(
+            "Weekly Statement",
+            rect.x + 18.0,
+            rect.y + 30.0,
+            23,
+            TEXT_BRIGHT,
+        );
+        let Some(pressure) = &self.last_weekly_pressure else {
+            draw_badge(
+                "PENDING",
+                Rect::new(rect.x + rect.w - 104.0, rect.y + 15.0, 82.0, 25.0),
+                TEXT_DIM,
+            );
+            draw_wrapped_text(
+                "Advance the week to collect rent and close the first portfolio statement.",
+                rect.x + 18.0,
+                rect.y + 66.0,
+                rect.w - 36.0,
+                17,
+                TEXT_DIM,
+            );
+            return;
+        };
+
+        let net = pressure.rental_income - pressure.total;
+        draw_badge(
+            if net >= 0 { "CASHFLOW +" } else { "CASHFLOW -" },
+            Rect::new(rect.x + rect.w - 122.0, rect.y + 15.0, 100.0, 25.0),
+            if net >= 0 { POSITIVE } else { WARNING },
+        );
+        let rows = [
+            ("Rent collected", pressure.rental_income),
+            ("Management", -pressure.rental_operating_cost),
+            ("Loan interest", -pressure.debt_interest),
+            ("Property costs", -pressure.holding_cost),
+            ("Net movement", net),
+        ];
+        for (index, (title, amount)) in rows.iter().enumerate() {
+            let row_y = rect.y + 56.0 + index as f32 * 20.0;
+            label(title, rect.x + 18.0, row_y, 14, TEXT_DIM);
+            label(
+                &signed_money(*amount),
+                rect.x + rect.w - 112.0,
+                row_y,
+                14,
+                if *amount >= 0 { POSITIVE } else { WARNING },
+            );
+        }
+        if pressure.shortfall_added_to_debt > 0 {
+            label_fit(
+                &format!(
+                    "Shortfall {} added to debt",
+                    format_money(pressure.shortfall_added_to_debt)
+                ),
+                rect.x + 18.0,
+                rect.y + rect.h - 8.0,
+                rect.w - 36.0,
+                13,
+                NEGATIVE,
+            );
+        }
     }
 }
 

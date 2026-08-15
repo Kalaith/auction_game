@@ -4,10 +4,11 @@ use crate::model::{
 };
 use crate::sim::rental::{apply_rental_income, portfolio_rental_snapshot};
 use crate::sim::valuation::net_worth;
+use serde::{Deserialize, Serialize};
 
 const WEEKLY_DEBT_INTEREST_RATE: f32 = 0.00095;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct WeeklyPressure {
     pub rental_income: i64,
     pub rental_operating_cost: i64,

@@ -40,6 +40,7 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - Rent supports cashflow and borrowing capacity, but debt, ownership costs, and scheduled maintenance remain visible.
 - Spare cash can reduce a selected property's principal, trading liquidity for lower debt and more bank headroom.
 - A sale outcome separates the hammer price from fees, loan repayment, settlement cash released, and true deal profit.
+- Every advanced week closes a visible statement for rent, management, interest, property costs, net cashflow, and debt-funded shortfall.
 - Maintenance checks occur on a disclosed schedule, reduce collected rent until repaired, and never arrive as uncontrolled random punishment.
 - Walking away preserves capital and can build discipline reputation when a rival overheats.
 - The season ledger values attendance, settled purchases, disciplined exits, post-auction buys, completed sales, and realized profit.

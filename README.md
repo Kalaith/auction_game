@@ -17,6 +17,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - Build a season record that credits disciplined exits alongside purchases and profitable sales.
 - Pay down individual property loans when freeing bank headroom matters more than keeping cash liquid.
 - Read the seller-side auction ledger: reserve, bidder depth, debt cleared, settlement release, and true profit.
+- Read a weekly portfolio statement instead of guessing where rent and cash went.
 - Renovate, place or end tenancies, collect rent, handle scheduled maintenance, hold, or sell purchased properties.
 - Track every property, cash, debt, rent, weekly cashflow, fees, repairs, and net worth.
 

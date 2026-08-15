@@ -34,7 +34,11 @@ fn window_conf() -> Conf {
 
 #[macroquad::main(window_conf)]
 async fn main() {
-    macroquad_toolkit::ui::ensure_default_ui_font().expect("toolkit UI font should load");
+    macroquad_toolkit::ui::prewarm_default_ui_font(&[
+        12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 30, 31, 32, 34, 35, 38,
+        42, 44, 74,
+    ])
+    .expect("toolkit UI font should prewarm");
     let title_background =
         Texture2D::from_file_with_format(include_bytes!("../auction_house_title.png"), None);
     let mut app = App::new(title_background);

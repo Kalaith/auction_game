@@ -6,7 +6,7 @@ use crate::model::{
 use crate::screens::Screen;
 use crate::sim::auction_sim::{create_auction, update_auction};
 use crate::sim::campaign::{
-    apply_weekly_pressure, campaign_status, next_unlock_note, suburb_is_unlocked,
+    apply_weekly_pressure, campaign_status, next_unlock_note, suburb_is_unlocked, WeeklyPressure,
 };
 use crate::sim::finance::finance_snapshot;
 use crate::sim::maintenance::trigger_due_maintenance;
@@ -55,6 +55,7 @@ pub struct App {
     pub(crate) current_auction: Option<crate::model::Auction>,
     pub(crate) purchase_debrief: Option<PurchaseDebrief>,
     pub(crate) sale_result: Option<SaleResult>,
+    pub(crate) last_weekly_pressure: Option<WeeklyPressure>,
     pub(crate) research_reports: HashMap<PropertyId, ResearchReport>,
     pub(crate) selected_contractor: ContractorTier,
     pub(crate) selected_marketing_plan: MarketingPlan,
@@ -86,6 +87,7 @@ impl App {
             current_auction: None,
             purchase_debrief: None,
             sale_result: None,
+            last_weekly_pressure: None,
             research_reports: HashMap::new(),
             selected_contractor: ContractorTier::Reliable,
             selected_marketing_plan: MarketingPlan::Standard,
@@ -248,6 +250,7 @@ impl App {
         self.current_auction = None;
         self.purchase_debrief = None;
         self.sale_result = None;
+        self.last_weekly_pressure = None;
         self.research_reports.clear();
         self.selected_contractor = ContractorTier::Reliable;
         self.selected_marketing_plan = MarketingPlan::Standard;
@@ -580,6 +583,7 @@ impl App {
 
         let market = self.market().clone();
         let pressure = apply_weekly_pressure(&mut self.player, &market);
+        self.last_weekly_pressure = Some(pressure.clone());
         let completed_jobs = progress_player_renovations(&mut self.player);
         let maintenance_notices = trigger_due_maintenance(&mut self.player);
         self.week += 1;
