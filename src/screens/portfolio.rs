@@ -10,7 +10,7 @@ use crate::screens::portfolio_widgets::{
 use crate::sim::campaign::{
     annual_interest_rate_percent, weekly_debt_interest, weekly_holding_cost,
 };
-use crate::sim::finance::{borrowing_limit, refinance_capacity};
+use crate::sim::finance::{borrowing_limit, property_cashflow, refinance_capacity};
 use crate::sim::rental::{leasing_cost, portfolio_rental_snapshot, weekly_rent_for_owned};
 use crate::sim::valuation::current_value;
 use crate::ui::*;
@@ -60,6 +60,7 @@ impl App {
             (ui_width() - 56.0 - selector_gap * (count.saturating_sub(1)) as f32) / count as f32;
         let mut selected = None;
         for (index, property) in self.player.properties.iter().take(6).enumerate() {
+            let property_week = property_cashflow(property, self.market());
             let rect = Rect::new(
                 28.0 + index as f32 * (selector_w + selector_gap),
                 124.0,
@@ -87,12 +88,16 @@ impl App {
             } else if property.is_leased {
                 if let Some(issue) = &property.maintenance_issue {
                     format!(
-                        "{} | rent -{} / wk",
+                        "{} | {} net / wk",
                         issue.kind.label(),
-                        format_money(issue.weekly_rent_loss)
+                        format_money(property_week.net_cashflow)
                     )
                 } else {
-                    format!("Leased {} / wk", format_money(property.weekly_rent))
+                    format!(
+                        "Leased {} / wk | {} net",
+                        format_money(property.weekly_rent),
+                        format_money(property_week.net_cashflow)
+                    )
                 }
             } else {
                 "Vacant".to_string()
@@ -104,8 +109,10 @@ impl App {
                 14,
                 if property.maintenance_issue.is_some() {
                     NEGATIVE
-                } else if property.is_leased {
+                } else if property.is_leased && property_week.net_cashflow >= 0 {
                     POSITIVE
+                } else if property.is_leased {
+                    WARNING
                 } else if property.leasing_weeks_remaining > 0 {
                     crate::ui::BLUE
                 } else {
@@ -251,7 +258,12 @@ impl App {
 
         let hold_rect = Rect::new(main.x + 36.0 + card_w, card_y, card_w, 160.0);
         if owned.is_leased || owned.leasing_weeks_remaining > 0 {
-            if draw_hold_decision(hold_rect, &owned, self.campaign_status.is_finished()) {
+            if draw_hold_decision(
+                hold_rect,
+                &owned,
+                property_cashflow(&owned, self.market()).net_cashflow,
+                self.campaign_status.is_finished(),
+            ) {
                 hold_week = true;
             }
         } else {

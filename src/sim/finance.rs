@@ -1,5 +1,6 @@
-use crate::model::{MarketEvent, Player, Property, PropertyId};
+use crate::model::{MarketEvent, OwnedProperty, Player, Property, PropertyId};
 use crate::sim::campaign::weekly_debt_interest;
+use crate::sim::maintenance::effective_weekly_rent;
 use crate::sim::rental::{portfolio_rental_snapshot, rental_management_cost, weekly_rent_for};
 use crate::sim::valuation::{
     cash_needed_to_settle, current_value, deposit, net_worth, round_down_to_increment,
@@ -46,6 +47,29 @@ pub struct RentalUnderwrite {
     pub property_cost: i64,
     pub loan_interest: i64,
     pub net_cashflow: i64,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct PropertyCashflow {
+    pub gross_rent: i64,
+    pub management: i64,
+    pub property_cost: i64,
+    pub loan_interest: i64,
+    pub net_cashflow: i64,
+}
+
+pub fn property_cashflow(owned: &OwnedProperty, market: &MarketEvent) -> PropertyCashflow {
+    let gross_rent = effective_weekly_rent(owned);
+    let management = rental_management_cost(gross_rent);
+    let property_cost = owned.property.holding_cost_per_week;
+    let loan_interest = weekly_debt_interest(owned.debt, market);
+    PropertyCashflow {
+        gross_rent,
+        management,
+        property_cost,
+        loan_interest,
+        net_cashflow: gross_rent - management - property_cost - loan_interest,
+    }
 }
 
 pub fn rental_underwrite(

@@ -48,6 +48,38 @@ fn rental_underwrite_prices_the_debt_and_ownership_cost_before_bidding() {
 }
 
 #[test]
+fn property_cashflow_identifies_the_actual_drag_on_a_leased_home() {
+    let data = GameData::load();
+    let market = &data.market_events[0];
+    let property = Property::from_template(&data.properties[0]);
+    let mut owned = OwnedProperty::new(
+        property.clone(),
+        property.reserve_price,
+        18_000,
+        deposit(property.reserve_price),
+        property.reserve_price - deposit(property.reserve_price),
+        property.reserve_price,
+        ResearchLevel::BuildingInspection,
+        WalkawayStyle::Balanced,
+    );
+    owned.is_leased = true;
+    owned.weekly_rent = weekly_rent_for_owned(&owned, market);
+
+    let leveraged = property_cashflow(&owned, market);
+    owned.debt = 0;
+    let debt_free = property_cashflow(&owned, market);
+
+    assert_eq!(
+        leveraged.net_cashflow,
+        leveraged.gross_rent
+            - leveraged.management
+            - leveraged.property_cost
+            - leveraged.loan_interest
+    );
+    assert!(debt_free.net_cashflow > leveraged.net_cashflow);
+}
+
+#[test]
 fn principal_payment_reduces_cash_and_both_debt_ledgers() {
     let data = GameData::load();
     let market = &data.market_events[0];

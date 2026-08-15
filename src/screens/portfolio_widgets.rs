@@ -339,6 +339,7 @@ pub(super) fn draw_skip_renovation(rect: Rect, owned: &OwnedProperty, cash: i64)
 pub(super) fn draw_hold_decision(
     rect: Rect,
     owned: &OwnedProperty,
+    weekly_cashflow: i64,
     campaign_finished: bool,
 ) -> bool {
     soft_panel(rect);
@@ -382,16 +383,20 @@ pub(super) fn draw_hold_decision(
         16,
         TEXT_DIM,
     );
-    label(
+    label_fit(
         &format!(
-            "Rent {} | property cost {}",
-            format_money(crate::sim::maintenance::effective_weekly_rent(owned)),
-            format_money(owned.property.holding_cost_per_week)
+            "Net {} / wk after all running costs",
+            format_money(weekly_cashflow)
         ),
         rect.x + 16.0,
         rect.y + 104.0,
+        rect.w - 32.0,
         18,
-        WARNING,
+        if weekly_cashflow >= 0 {
+            POSITIVE
+        } else {
+            WARNING
+        },
     );
     if owned.is_leased && owned.maintenance_issue.is_none() {
         let weeks_until_check =
