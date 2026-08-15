@@ -1,5 +1,5 @@
 use super::*;
-use crate::model::{OwnedProperty, Property, PropertyTemplate};
+use crate::model::{CompletedUpgrade, ContractorTier, OwnedProperty, Property, PropertyTemplate};
 use std::collections::HashMap;
 
 fn property() -> Property {
@@ -71,4 +71,57 @@ fn leased_property_records_income_and_operating_cost() {
         player.properties[0].operating_spend,
         snapshot.operating_cost
     );
+}
+
+#[test]
+fn completed_improvements_raise_the_next_rent_appraisal() {
+    let property = property();
+    let mut owned = OwnedProperty::new(
+        property.clone(),
+        470_000,
+        18_000,
+        56_000,
+        414_000,
+        480_000,
+        crate::model::ResearchLevel::StreetScan,
+        crate::model::WalkawayStyle::Balanced,
+    );
+    let base_rent = weekly_rent_for_owned(&owned, &market());
+    owned.upgrades.push(CompletedUpgrade {
+        upgrade_id: "kitchen_refresh".to_string(),
+        name: "Kitchen Refresh".to_string(),
+        contractor: ContractorTier::Reliable,
+        actual_cost: 26_000,
+        value_boost: 41_000,
+        appeal_boost: 12,
+        sale_emotion_boost: 7,
+        removes_defect: false,
+        weeks_taken: 2,
+        note: String::new(),
+    });
+
+    assert!(weekly_rent_for_owned(&owned, &market()) > base_rent);
+}
+
+#[test]
+fn ending_a_tenancy_returns_the_home_to_vacant_state() {
+    let property = property();
+    let mut owned = OwnedProperty::new(
+        property,
+        470_000,
+        18_000,
+        56_000,
+        414_000,
+        480_000,
+        crate::model::ResearchLevel::StreetScan,
+        crate::model::WalkawayStyle::Balanced,
+    );
+    owned.is_leased = true;
+    owned.weekly_rent = 530;
+
+    let cost = end_tenancy(&mut owned);
+
+    assert_eq!(cost, 530);
+    assert!(!owned.is_leased);
+    assert_eq!(owned.weekly_rent, 0);
 }

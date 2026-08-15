@@ -1,4 +1,6 @@
-use crate::model::{ActiveRenovation, CompletedUpgrade, Property, ResearchLevel, WalkawayStyle};
+use crate::model::{
+    ActiveRenovation, CompletedUpgrade, MaintenanceIssue, Property, ResearchLevel, WalkawayStyle,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -42,6 +44,10 @@ pub struct OwnedProperty {
     pub rent_received: i64,
     #[serde(default)]
     pub operating_spend: i64,
+    #[serde(default)]
+    pub maintenance_issue: Option<MaintenanceIssue>,
+    #[serde(default)]
+    pub maintenance_events_resolved: u8,
 }
 
 impl OwnedProperty {
@@ -74,6 +80,8 @@ impl OwnedProperty {
             weekly_rent: 0,
             rent_received: 0,
             operating_spend: 0,
+            maintenance_issue: None,
+            maintenance_events_resolved: 0,
         }
     }
 

@@ -43,7 +43,16 @@ pub(super) fn draw_problem_card(
     dark_panel(rect);
     label("Diagnosis", rect.x + 16.0, rect.y + 30.0, 22, TEXT_BRIGHT);
     let diagnosis = diagnose_property(owned, market);
-    let (summary, color) = if let Some(project) = &owned.active_renovation {
+    let (summary, color) = if let Some(issue) = &owned.maintenance_issue {
+        (
+            format!(
+                "{} is reducing rent by {} each week.",
+                issue.kind.label(),
+                format_money(issue.weekly_rent_loss)
+            ),
+            NEGATIVE,
+        )
+    } else if let Some(project) = &owned.active_renovation {
         (
             format!(
                 "{} underway. {}w left before value changes.",
@@ -104,6 +113,45 @@ pub(super) fn draw_problem_card(
             NEGATIVE
         },
     );
+}
+
+pub(super) fn draw_maintenance_decision(rect: Rect, owned: &OwnedProperty, cash: i64) -> bool {
+    let Some(issue) = &owned.maintenance_issue else {
+        return false;
+    };
+    highlight_panel(rect);
+    label(
+        issue.kind.label(),
+        rect.x + 16.0,
+        rect.y + 30.0,
+        21,
+        NEGATIVE,
+    );
+    draw_wrapped_text(
+        &issue.description,
+        rect.x + 16.0,
+        rect.y + 58.0,
+        rect.w - 32.0,
+        15,
+        TEXT_DIM,
+    );
+    label(
+        &format!(
+            "Repair {} | restores {} / wk",
+            format_money(issue.repair_cost),
+            format_money(issue.weekly_rent_loss)
+        ),
+        rect.x + 16.0,
+        rect.y + 112.0,
+        16,
+        WARNING,
+    );
+    button(
+        Rect::new(rect.x + rect.w - 118.0, rect.y + rect.h - 46.0, 98.0, 34.0),
+        "Repair",
+        cash >= issue.repair_cost,
+        ButtonTone::Primary,
+    )
 }
 
 pub(super) fn draw_active_project_decision(rect: Rect, owned: &OwnedProperty) {
@@ -236,28 +284,54 @@ pub(super) fn draw_upgrade_decision(
     )
 }
 
-pub(super) fn draw_skip_renovation(rect: Rect, owned: &OwnedProperty) {
+pub(super) fn draw_skip_renovation(rect: Rect, owned: &OwnedProperty, cash: i64) -> bool {
     soft_panel(rect);
-    label("Leave It Alone", rect.x + 16.0, rect.y + 30.0, 21, POSITIVE);
+    label(
+        if owned.is_leased {
+            "Keep Rent Or Improve"
+        } else {
+            "Leave It Alone"
+        },
+        rect.x + 16.0,
+        rect.y + 30.0,
+        21,
+        POSITIVE,
+    );
     draw_wrapped_text(
-        "No available project earns back its cost on this home right now.",
+        if owned.is_leased {
+            "The tenant is making this asset work. End the tenancy only to unlock renovations."
+        } else {
+            "No available project earns back its cost on this home right now."
+        },
         rect.x + 16.0,
         rect.y + 58.0,
         rect.w - 32.0,
         16,
         TEXT_DIM,
     );
+    if owned.is_leased {
+        label(
+            &format!("Turnover cost {}", format_money(owned.weekly_rent)),
+            rect.x + 16.0,
+            rect.y + 105.0,
+            15,
+            WARNING,
+        );
+        return button(
+            Rect::new(rect.x + rect.w - 148.0, rect.y + rect.h - 46.0, 128.0, 34.0),
+            "End Tenancy",
+            cash >= owned.weekly_rent,
+            ButtonTone::Ghost,
+        );
+    }
     label(
-        if owned.is_leased {
-            "The tenant is already making this asset work."
-        } else {
-            "Keep the cash for leasing or another deposit."
-        },
+        "Keep the cash for leasing or another deposit.",
         rect.x + 16.0,
         rect.y + 112.0,
         16,
         POSITIVE,
     );
+    false
 }
 
 pub(super) fn draw_hold_decision(
@@ -300,7 +374,7 @@ pub(super) fn draw_hold_decision(
     label(
         &format!(
             "Rent {} | property cost {}",
-            format_money(owned.weekly_rent),
+            format_money(crate::sim::maintenance::effective_weekly_rent(owned)),
             format_money(owned.property.holding_cost_per_week)
         ),
         rect.x + 16.0,
@@ -308,6 +382,18 @@ pub(super) fn draw_hold_decision(
         18,
         WARNING,
     );
+    if owned.is_leased && owned.maintenance_issue.is_none() {
+        let weeks_until_check =
+            crate::sim::maintenance::next_maintenance_week(owned).saturating_sub(owned.weeks_held);
+        label_fit(
+            &format!("Check in {weeks_until_check}w | reserve $8k"),
+            rect.x + 16.0,
+            rect.y + 132.0,
+            rect.w - 164.0,
+            14,
+            TEXT_DIM,
+        );
+    }
     button(
         Rect::new(rect.x + rect.w - 124.0, rect.y + rect.h - 46.0, 104.0, 34.0),
         if active.is_some() {

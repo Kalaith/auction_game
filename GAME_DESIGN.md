@@ -33,7 +33,9 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - ASSERT is theatre with asymmetric consequences: it discourages rational buyers and can provoke emotional ones.
 - A renovation is recommended only when its expected value exceeds its full quoted effect.
 - Known structural defects must be repaired before a tenant can be placed.
-- Rent supports cashflow and borrowing capacity, but debt and ownership costs remain visible.
+- Completed improvements raise the next rent appraisal; an existing tenancy can be ended for one week's rent to reopen renovation.
+- Rent supports cashflow and borrowing capacity, but debt, ownership costs, and scheduled maintenance remain visible.
+- Maintenance checks occur on a disclosed schedule, reduce collected rent until repaired, and never arrive as uncontrolled random punishment.
 - Walking away preserves capital and can build discipline reputation when a rival overheats.
 
 ## Content structure

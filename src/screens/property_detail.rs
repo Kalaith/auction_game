@@ -250,7 +250,7 @@ fn draw_detail_summary(app: &App, rect: Rect, property: &Property, research_leve
         TEXT_DIM,
     );
 
-    let risk = Rect::new(rect.x + rect.w - 286.0, rect.y + 194.0, 260.0, 102.0);
+    let risk = Rect::new(rect.x + rect.w - 286.0, rect.y + 194.0, 260.0, 150.0);
     dark_panel(risk);
     label(
         "Due Diligence",
@@ -288,6 +288,28 @@ fn draw_detail_summary(app: &App, rect: Rect, property: &Property, research_leve
         risk.w - 32.0,
         13,
         TEXT_DIM,
+    );
+    let likely_profile = &app.data.bidder_profiles[property.id % app.data.bidder_profiles.len()];
+    let rival_hint = if research_level >= ResearchLevel::FullDiligence {
+        format!(
+            "Likely rival: {} ({})",
+            likely_profile.name,
+            likely_profile.bidder_type.label()
+        )
+    } else {
+        "Full diligence profiles one likely rival.".to_string()
+    };
+    label_fit(
+        &rival_hint,
+        risk.x + 16.0,
+        risk.y + 122.0,
+        risk.w - 32.0,
+        14,
+        if research_level >= ResearchLevel::FullDiligence {
+            ACCENT
+        } else {
+            TEXT_DIM
+        },
     );
 }
 

@@ -2,12 +2,13 @@ use crate::app::App;
 use crate::model::PropertyId;
 use crate::screens::portfolio_widgets::{
     draw_active_project_decision, draw_contractor_selector, draw_empty_portfolio,
-    draw_hold_decision, draw_lease_decision, draw_marketing_selector, draw_problem_card,
-    draw_sell_decision, draw_skip_renovation, draw_upgrade_decision, recommended_upgrade,
+    draw_hold_decision, draw_lease_decision, draw_maintenance_decision, draw_marketing_selector,
+    draw_problem_card, draw_sell_decision, draw_skip_renovation, draw_upgrade_decision,
+    recommended_upgrade,
 };
 use crate::sim::campaign::{weekly_debt_interest, weekly_holding_cost};
 use crate::sim::finance::borrowing_limit;
-use crate::sim::rental::{leasing_cost, portfolio_rental_snapshot, weekly_rent_for};
+use crate::sim::rental::{leasing_cost, portfolio_rental_snapshot, weekly_rent_for_owned};
 use crate::sim::valuation::current_value;
 use crate::ui::*;
 use macroquad::prelude::*;
@@ -76,7 +77,15 @@ impl App {
                 TEXT_BRIGHT,
             );
             let lease_label = if property.is_leased {
-                format!("Leased {} / wk", format_money(property.weekly_rent))
+                if let Some(issue) = &property.maintenance_issue {
+                    format!(
+                        "{} | rent -{} / wk",
+                        issue.kind.label(),
+                        format_money(issue.weekly_rent_loss)
+                    )
+                } else {
+                    format!("Leased {} / wk", format_money(property.weekly_rent))
+                }
             } else {
                 "Vacant".to_string()
             };
@@ -85,7 +94,9 @@ impl App {
                 rect.x + 10.0,
                 rect.y + 50.0,
                 14,
-                if property.is_leased {
+                if property.maintenance_issue.is_some() {
+                    NEGATIVE
+                } else if property.is_leased {
                     POSITIVE
                 } else {
                     WARNING
@@ -174,11 +185,27 @@ impl App {
         let mut upgrade_action: Option<(PropertyId, String)> = None;
         let mut hold_week = false;
         let mut lease = false;
+        let mut end_tenancy_action = false;
+        let mut repair_maintenance_action = false;
 
-        if has_active_project {
+        if owned.maintenance_issue.is_some() {
+            if draw_maintenance_decision(
+                Rect::new(main.x + 18.0, card_y, card_w, 160.0),
+                &owned,
+                self.player.cash,
+            ) {
+                repair_maintenance_action = true;
+            }
+        } else if has_active_project {
             draw_active_project_decision(Rect::new(main.x + 18.0, card_y, card_w, 160.0), &owned);
         } else if owned.is_leased {
-            draw_skip_renovation(Rect::new(main.x + 18.0, card_y, card_w, 160.0), &owned);
+            if draw_skip_renovation(
+                Rect::new(main.x + 18.0, card_y, card_w, 160.0),
+                &owned,
+                self.player.cash,
+            ) {
+                end_tenancy_action = true;
+            }
         } else if let Some((upgrade, quote)) = recommended_upgrade(self, &owned) {
             if draw_upgrade_decision(
                 Rect::new(main.x + 18.0, card_y, card_w, 160.0),
@@ -190,7 +217,11 @@ impl App {
                 upgrade_action = Some((owned.property.id, upgrade.id.clone()));
             }
         } else {
-            draw_skip_renovation(Rect::new(main.x + 18.0, card_y, card_w, 160.0), &owned);
+            draw_skip_renovation(
+                Rect::new(main.x + 18.0, card_y, card_w, 160.0),
+                &owned,
+                self.player.cash,
+            );
         }
 
         let hold_rect = Rect::new(main.x + 36.0 + card_w, card_y, card_w, 160.0);
@@ -199,7 +230,7 @@ impl App {
                 hold_week = true;
             }
         } else {
-            let asking_rent = weekly_rent_for(&owned.property, self.market());
+            let asking_rent = weekly_rent_for_owned(&owned, self.market());
             if draw_lease_decision(
                 hold_rect,
                 asking_rent,
@@ -226,7 +257,11 @@ impl App {
         if let Some((property_id, upgrade_id)) = upgrade_action {
             self.buy_upgrade(property_id, &upgrade_id);
         }
-        if lease {
+        if repair_maintenance_action {
+            self.repair_property_maintenance(owned.property.id);
+        } else if end_tenancy_action {
+            self.end_property_tenancy(owned.property.id);
+        } else if lease {
             self.lease_property(owned.property.id);
         } else if let Some(choice) = sale_action {
             self.sell_property(owned.property.id, choice);

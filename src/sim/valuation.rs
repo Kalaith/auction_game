@@ -65,6 +65,10 @@ pub fn current_value(owned: &OwnedProperty, market: &MarketEvent) -> i64 {
         value = round_to_1000(value as f32 * (1.0 - penalty));
     }
 
+    if let Some(issue) = &owned.maintenance_issue {
+        value -= round_to_1000(issue.repair_cost as f32 * 1.25);
+    }
+
     let appeal_cap = match owned.property.deal_archetype {
         DealArchetype::LandValuePlay => 0.10,
         DealArchetype::PrettyTrap => 0.12,

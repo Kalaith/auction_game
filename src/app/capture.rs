@@ -2,7 +2,8 @@ use super::App;
 use crate::model::{OwnedProperty, Property, ResearchLevel, WalkawayStyle};
 use crate::screens::Screen;
 use crate::sim::auction_sim::place_player_bid;
-use crate::sim::rental::weekly_rent_for;
+use crate::sim::maintenance::{next_maintenance_week, trigger_due_maintenance};
+use crate::sim::rental::weekly_rent_for_owned;
 use crate::sim::valuation::{deposit, purchase_fees};
 
 impl App {
@@ -17,6 +18,13 @@ impl App {
             "detail" => {
                 self.start_new_game();
                 self.open_property_detail(0);
+            }
+            "detail_full" => {
+                self.start_new_game();
+                if let Some(property) = self.available_properties.first().cloned() {
+                    self.open_property_detail(0);
+                    self.buy_research(property.id, ResearchLevel::FullDiligence);
+                }
             }
             "auction" => {
                 self.start_new_game();
@@ -37,6 +45,15 @@ impl App {
             "portfolio" => {
                 self.start_new_game();
                 self.seed_portfolio_capture();
+                self.screen = Screen::Portfolio;
+            }
+            "portfolio_maintenance" => {
+                self.start_new_game();
+                self.seed_portfolio_capture();
+                if let Some(owned) = self.player.properties.first_mut() {
+                    owned.weeks_held = next_maintenance_week(owned);
+                }
+                trigger_due_maintenance(&mut self.player);
                 self.screen = Screen::Portfolio;
             }
             "title" => {}
@@ -70,7 +87,7 @@ impl App {
                 WalkawayStyle::Balanced,
             );
             owned.is_leased = true;
-            owned.weekly_rent = weekly_rent_for(&property, self.market());
+            owned.weekly_rent = weekly_rent_for_owned(&owned, self.market());
             self.player.debt += property_debt;
             self.player.properties.push(owned);
         }

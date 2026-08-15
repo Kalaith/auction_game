@@ -1,4 +1,5 @@
-use crate::model::{Condition, DealArchetype, MarketEvent, Player, Property};
+use crate::model::{Condition, DealArchetype, MarketEvent, OwnedProperty, Player, Property};
+use crate::sim::maintenance::effective_weekly_rent;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct RentalSnapshot {
@@ -30,8 +31,28 @@ pub fn weekly_rent_for(property: &Property, market: &MarketEvent) -> i64 {
     )
 }
 
+pub fn weekly_rent_for_owned(owned: &OwnedProperty, market: &MarketEvent) -> i64 {
+    let improvement_rent: i64 = owned
+        .upgrades
+        .iter()
+        .filter(|upgrade| upgrade.upgrade_id != "staging")
+        .map(|upgrade| round_to_ten(upgrade.value_boost as f32 * 0.035 / 52.0))
+        .sum();
+    weekly_rent_for(&owned.property, market) + improvement_rent
+}
+
 pub fn leasing_cost(weekly_rent: i64) -> i64 {
     weekly_rent * 2
+}
+
+pub fn end_tenancy(owned: &mut OwnedProperty) -> i64 {
+    if !owned.is_leased {
+        return 0;
+    }
+    let turnover_cost = owned.weekly_rent;
+    owned.is_leased = false;
+    owned.weekly_rent = 0;
+    turnover_cost
 }
 
 pub fn portfolio_rental_snapshot(player: &Player) -> RentalSnapshot {
@@ -40,8 +61,9 @@ pub fn portfolio_rental_snapshot(player: &Player) -> RentalSnapshot {
         .iter()
         .filter(|owned| owned.is_leased)
         .fold(RentalSnapshot::default(), |mut total, owned| {
-            let operating_cost = rental_operating_cost(owned.weekly_rent);
-            total.gross_rent += owned.weekly_rent;
+            let collected_rent = effective_weekly_rent(owned);
+            let operating_cost = rental_operating_cost(collected_rent);
+            total.gross_rent += collected_rent;
             total.operating_cost += operating_cost;
             total.net_income += owned.weekly_rent - operating_cost;
             total
@@ -52,8 +74,9 @@ pub fn apply_rental_income(player: &mut Player) -> RentalSnapshot {
     let snapshot = portfolio_rental_snapshot(player);
     for owned in &mut player.properties {
         if owned.is_leased {
-            let operating_cost = rental_operating_cost(owned.weekly_rent);
-            owned.rent_received += owned.weekly_rent;
+            let collected_rent = effective_weekly_rent(owned);
+            let operating_cost = rental_operating_cost(collected_rent);
+            owned.rent_received += collected_rent;
             owned.operating_spend += operating_cost;
         }
     }

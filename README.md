@@ -11,7 +11,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - Set a walk-away price before bidding.
 - Raise normally, make one assertive jump, wait for a rival tell, or walk away in live auctions.
 - Hear a legal vendor bid below the hidden reserve and the auctioneer's decisive on-market call.
-- Renovate, place tenants, collect rent, hold, or sell purchased properties.
+- Renovate, place or end tenancies, collect rent, handle scheduled maintenance, hold, or sell purchased properties.
 - Track every property, cash, debt, rent, weekly cashflow, fees, repairs, and net worth.
 
 ## Goal

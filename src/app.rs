@@ -9,10 +9,10 @@ use crate::sim::campaign::{
     apply_weekly_pressure, campaign_status, next_unlock_note, suburb_is_unlocked,
 };
 use crate::sim::finance::finance_snapshot;
+use crate::sim::maintenance::trigger_due_maintenance;
 use crate::sim::renovation::{
     progress_player_renovations, quote_renovation, start_upgrade_project,
 };
-use crate::sim::rental::{leasing_cost, weekly_rent_for};
 use crate::sim::research::{recommended_walkaway, research_cost};
 use crate::sim::sale_sim::{simulate_sale, MarketingPlan, ReserveChoice, SaleResult};
 use crate::sim::valuation::{
@@ -24,6 +24,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 mod capture;
+mod portfolio_actions;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub(crate) struct PurchaseDebrief {
@@ -509,44 +510,6 @@ impl App {
         self.screen = Screen::SaleResult;
     }
 
-    pub(crate) fn lease_property(&mut self, property_id: PropertyId) {
-        let Some(index) = self
-            .player
-            .properties
-            .iter()
-            .position(|owned| owned.property.id == property_id)
-        else {
-            return;
-        };
-        if self.player.properties[index].is_leased {
-            return;
-        }
-        if self.player.properties[index].active_renovation.is_some() {
-            self.status = "Finish the renovation before placing a tenant.".to_string();
-            return;
-        }
-        if self.player.properties[index].hidden_defect_discovered
-            && !self.player.properties[index].has_defect_repair()
-        {
-            self.status = "Repair the known structural risk before placing a tenant.".to_string();
-            return;
-        }
-        let rent = weekly_rent_for(&self.player.properties[index].property, self.market());
-        let fee = leasing_cost(rent);
-        if self.player.cash < fee {
-            self.status = format!("Need {} for advertising and leasing.", format_money(fee));
-            return;
-        }
-        self.player.cash -= fee;
-        self.player.properties[index].is_leased = true;
-        self.player.properties[index].weekly_rent = rent;
-        self.status = format!(
-            "Tenant placed at {} per week. Leasing cost {}.",
-            format_money(rent),
-            format_money(fee)
-        );
-    }
-
     pub(crate) fn purchase_debrief_for_auction(
         &self,
         auction: &crate::model::Auction,
@@ -611,6 +574,7 @@ impl App {
         let market = self.market().clone();
         let pressure = apply_weekly_pressure(&mut self.player, &market);
         let completed_jobs = progress_player_renovations(&mut self.player);
+        let maintenance_notices = trigger_due_maintenance(&mut self.player);
         self.week += 1;
         self.market_index = ((self.week - 1) as usize) % self.data.market_events.len();
         self.auction_registrations = WEEKLY_AUCTION_REGISTRATIONS;
@@ -654,12 +618,18 @@ impl App {
                 } else {
                     format!(" {}", completed_jobs.join(" "))
                 };
+                let maintenance_note = if maintenance_notices.is_empty() {
+                    String::new()
+                } else {
+                    format!(" Maintenance: {}", maintenance_notices.join(" "))
+                };
                 format!(
-                    "Week {} market pulse. {}{}{} {}",
+                    "Week {} market pulse. {}{}{}{} {}",
                     self.week,
                     pressure_note,
                     cashflow_note,
                     renovation_note,
+                    maintenance_note,
                     next_unlock_note(self.week, current_net_worth, self.player.reputation)
                 )
             }
