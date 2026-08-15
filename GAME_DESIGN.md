@@ -39,6 +39,7 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - A renovation is recommended only when its expected value exceeds its full quoted effect.
 - Known structural defects must be repaired before a tenant can be placed.
 - Completed improvements raise the next rent appraisal; an existing tenancy can be ended for one week's rent to reopen renovation.
+- Leasing requires an upfront two-week letting fee and one vacant campaign week; the tenancy starts only after that week's ownership and interest costs close.
 - Rent supports cashflow and borrowing capacity, but debt, ownership costs, and scheduled maintenance remain visible.
 - Spare cash can reduce a selected property's principal, trading liquidity for lower debt and more bank headroom.
 - A clean, leased home held for four weeks can release equity up to 80% LVR and the bank limit; the cash funds growth while debt and interest rise.

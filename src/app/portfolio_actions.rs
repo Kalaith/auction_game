@@ -2,7 +2,9 @@ use super::App;
 use crate::model::PropertyId;
 use crate::sim::finance::{pay_down_principal, refinance_property};
 use crate::sim::maintenance::repair_maintenance;
-use crate::sim::rental::{end_tenancy, leasing_cost, weekly_rent_for_owned};
+use crate::sim::rental::{
+    end_tenancy, leasing_cost, start_leasing_campaign, weekly_rent_for_owned,
+};
 use crate::ui::format_money;
 
 impl App {
@@ -43,7 +45,9 @@ impl App {
         else {
             return;
         };
-        if self.player.properties[index].is_leased {
+        if self.player.properties[index].is_leased
+            || self.player.properties[index].leasing_weeks_remaining > 0
+        {
             return;
         }
         if self.player.properties[index].active_renovation.is_some() {
@@ -63,14 +67,12 @@ impl App {
             return;
         }
         self.player.cash -= fee;
-        self.player.properties[index].is_leased = true;
-        self.player.properties[index].weekly_rent = rent;
+        start_leasing_campaign(&mut self.player.properties[index], rent);
         self.status = format!(
-            "Tenant placed at {} per week. Leasing cost {}.",
+            "Listed for {} per week. Leasing cost {} paid; tap HOLD to advance one week and place the tenant.",
             format_money(rent),
             format_money(fee)
         );
-        self.refresh_campaign_outcome();
     }
 
     pub(crate) fn end_property_tenancy(&mut self, property_id: PropertyId) {

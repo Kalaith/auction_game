@@ -13,6 +13,7 @@ use crate::sim::maintenance::trigger_due_maintenance;
 use crate::sim::renovation::{
     progress_player_renovations, quote_renovation, start_upgrade_project,
 };
+use crate::sim::rental::progress_leasing_campaigns;
 use crate::sim::research::{recommended_walkaway, research_cost};
 use crate::sim::sale_sim::{simulate_sale, MarketingPlan, ReserveChoice, SaleResult};
 use crate::sim::valuation::{
@@ -455,6 +456,12 @@ impl App {
             self.status = "A tenanted home cannot begin renovation work.".to_string();
             return;
         }
+        if self.player.properties[index].leasing_weeks_remaining > 0 {
+            self.status =
+                "The home is advertised for rent. Finish the leasing week before renovating."
+                    .to_string();
+            return;
+        }
 
         let quote = quote_renovation(
             &self.player.properties[index],
@@ -616,6 +623,7 @@ impl App {
         let pressure = apply_weekly_pressure(&mut self.player, &market);
         self.last_weekly_pressure = Some(pressure.clone());
         let completed_jobs = progress_player_renovations(&mut self.player);
+        let completed_leases = progress_leasing_campaigns(&mut self.player);
         let maintenance_notices = trigger_due_maintenance(&mut self.player);
         self.week += 1;
         self.market_index = ((self.week - 1) as usize) % self.data.market_events.len();
@@ -667,13 +675,19 @@ impl App {
                 } else {
                     format!(" Maintenance: {}", maintenance_notices.join(" "))
                 };
+                let leasing_note = if completed_leases.is_empty() {
+                    String::new()
+                } else {
+                    format!(" Leasing: {}", completed_leases.join(" "))
+                };
                 format!(
-                    "Week {} market pulse. {}{}{}{} {}",
+                    "Week {} market pulse. {}{}{}{}{} {}",
                     self.week,
                     pressure_note,
                     cashflow_note,
                     renovation_note,
                     maintenance_note,
+                    leasing_note,
                     next_unlock_note(self.week, current_net_worth, self.player.reputation)
                 )
             }

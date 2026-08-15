@@ -26,6 +26,9 @@ pub fn next_maintenance_week(owned: &OwnedProperty) -> u32 {
 }
 
 pub fn effective_weekly_rent(owned: &OwnedProperty) -> i64 {
+    if !owned.is_leased {
+        return 0;
+    }
     let loss = owned
         .maintenance_issue
         .as_ref()

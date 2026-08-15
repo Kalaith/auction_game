@@ -125,3 +125,46 @@ fn ending_a_tenancy_returns_the_home_to_vacant_state() {
     assert!(!owned.is_leased);
     assert_eq!(owned.weekly_rent, 0);
 }
+
+#[test]
+fn advertising_takes_a_week_before_rent_can_be_collected() {
+    let mut owned = OwnedProperty::new(
+        property(),
+        470_000,
+        18_000,
+        56_000,
+        414_000,
+        480_000,
+        crate::model::ResearchLevel::StreetScan,
+        crate::model::WalkawayStyle::Balanced,
+    );
+    assert!(start_leasing_campaign(&mut owned, 530));
+    assert_eq!(effective_weekly_rent(&owned), 0);
+    let mut player = Player::new();
+    player.properties.push(owned);
+
+    assert_eq!(portfolio_rental_snapshot(&player).gross_rent, 0);
+    let notices = progress_leasing_campaigns(&mut player);
+
+    assert_eq!(notices.len(), 1);
+    assert!(player.properties[0].is_leased);
+    assert_eq!(portfolio_rental_snapshot(&player).gross_rent, 530);
+}
+
+#[test]
+fn a_home_already_on_the_rental_market_cannot_be_listed_twice() {
+    let mut owned = OwnedProperty::new(
+        property(),
+        470_000,
+        18_000,
+        56_000,
+        414_000,
+        480_000,
+        crate::model::ResearchLevel::StreetScan,
+        crate::model::WalkawayStyle::Balanced,
+    );
+
+    assert!(start_leasing_campaign(&mut owned, 530));
+    assert!(!start_leasing_campaign(&mut owned, 560));
+    assert_eq!(owned.weekly_rent, 530);
+}

@@ -133,12 +133,12 @@ pub fn highlight_panel(rect: Rect) {
 }
 
 pub fn label(text: &str, x: f32, y: f32, size: u16, color: Color) {
-    let readable_size = size.max(17);
+    let readable_size = readable_font_size(size);
     macroquad_toolkit::ui::draw_ui_text(text, x, y, readable_size as f32, color);
 }
 
 pub fn measure_label(text: &str, size: u16) -> TextDimensions {
-    let readable_size = size.max(17);
+    let readable_size = readable_font_size(size);
     measure_text_raw(text, readable_size)
 }
 
@@ -201,14 +201,14 @@ pub fn rect_clicked(rect: Rect) -> bool {
 }
 
 pub fn draw_centered_label(text: &str, rect: Rect, font_size: u16, color: Color) {
-    let style = macroquad_toolkit::ui::TextStyle::new(font_size.max(17) as f32, color);
+    let style = macroquad_toolkit::ui::TextStyle::new(readable_font_size(font_size) as f32, color);
     macroquad_toolkit::ui::draw_text_centered_in_box_ex(
         text, rect.x, rect.y, rect.w, rect.h, style,
     );
 }
 
 pub fn label_fit(text: &str, x: f32, y: f32, max_width: f32, size: u16, color: Color) {
-    let size = size.max(17);
+    let size = readable_font_size(size);
     let clipped = macroquad_toolkit::ui::truncate_text_to_width(text, max_width, size as f32);
     label(&clipped, x, y, size, color);
 }
@@ -221,7 +221,7 @@ pub fn draw_wrapped_text(
     size: u16,
     color: Color,
 ) -> f32 {
-    let size = size.max(17);
+    let size = readable_font_size(size);
     let line_height = size as f32 + 8.0;
     let lines = macroquad_toolkit::ui::wrap_text(text, max_width, size as f32);
     for line in lines {
@@ -229,6 +229,18 @@ pub fn draw_wrapped_text(
         y += line_height;
     }
     y
+}
+
+fn readable_font_size(size: u16) -> u16 {
+    match size {
+        0..=17 => 17,
+        18..=20 => 20,
+        21..=24 => 22,
+        25..=28 => 26,
+        29..=34 => 32,
+        35..=60 => 38,
+        _ => size,
+    }
 }
 
 pub fn draw_meter(label_text: &str, value: i32, rect: Rect, color: Color) {

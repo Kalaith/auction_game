@@ -45,6 +45,34 @@ pub fn leasing_cost(weekly_rent: i64) -> i64 {
     weekly_rent * 2
 }
 
+pub fn start_leasing_campaign(owned: &mut OwnedProperty, weekly_rent: i64) -> bool {
+    if owned.is_leased || owned.leasing_weeks_remaining > 0 || weekly_rent <= 0 {
+        return false;
+    }
+    owned.weekly_rent = weekly_rent;
+    owned.leasing_weeks_remaining = 1;
+    true
+}
+
+pub fn progress_leasing_campaigns(player: &mut Player) -> Vec<String> {
+    let mut notices = Vec::new();
+    for owned in &mut player.properties {
+        if owned.is_leased || owned.leasing_weeks_remaining == 0 {
+            continue;
+        }
+        owned.leasing_weeks_remaining -= 1;
+        if owned.leasing_weeks_remaining == 0 {
+            owned.is_leased = true;
+            notices.push(format!(
+                "{} leased at {} per week.",
+                owned.property.address,
+                crate::ui::format_money(owned.weekly_rent)
+            ));
+        }
+    }
+    notices
+}
+
 pub fn end_tenancy(owned: &mut OwnedProperty) -> i64 {
     if !owned.is_leased {
         return 0;
@@ -52,6 +80,7 @@ pub fn end_tenancy(owned: &mut OwnedProperty) -> i64 {
     let turnover_cost = owned.weekly_rent;
     owned.is_leased = false;
     owned.weekly_rent = 0;
+    owned.leasing_weeks_remaining = 0;
     turnover_cost
 }
 

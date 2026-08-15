@@ -346,6 +346,8 @@ pub(super) fn draw_hold_decision(
     label(
         if active.is_some() {
             "Advance Work"
+        } else if owned.leasing_weeks_remaining > 0 {
+            "Finish Leasing Week"
         } else if owned.is_leased {
             "Collect Rent & Hold"
         } else {
@@ -356,8 +358,15 @@ pub(super) fn draw_hold_decision(
         21,
         TEXT_BRIGHT,
     );
-    let copy = active.map_or(
-        "Wait for a better market pulse, but pay the carrying cost.".to_string(),
+    let copy = active.map_or_else(
+        || {
+            if owned.leasing_weeks_remaining > 0 {
+                "Advance without rent; the advertised tenancy begins after this week's costs close."
+                    .to_string()
+            } else {
+                "Wait for a better market pulse, but pay the carrying cost.".to_string()
+            }
+        },
         |project| {
             format!(
                 "Move {} forward. Sale stays locked until the crew finishes.",
@@ -417,7 +426,7 @@ pub(super) fn draw_lease_decision(
 ) -> bool {
     highlight_panel(rect);
     label(
-        "Place A Tenant",
+        "Advertise For Rent",
         rect.x + 16.0,
         rect.y + 30.0,
         21,
@@ -427,7 +436,7 @@ pub(super) fn draw_lease_decision(
         if locked {
             "Finish active work or repair the known defect before placing a tenant."
         } else {
-            "Advertise the home and turn this purchase into a working portfolio asset."
+            "Pay the letting fee now. The home stays vacant for one week before the tenancy begins."
         },
         rect.x + 16.0,
         rect.y + 58.0,
@@ -451,10 +460,40 @@ pub(super) fn draw_lease_decision(
     );
     button(
         Rect::new(rect.x + rect.w - 124.0, rect.y + rect.h - 46.0, 104.0, 34.0),
-        if locked { "Repair First" } else { "Lease" },
+        if locked {
+            "Repair First"
+        } else {
+            "List For Rent"
+        },
         !locked && cash >= leasing_cost,
         ButtonTone::Primary,
     )
+}
+
+pub(super) fn draw_rental_campaign(rect: Rect, owned: &OwnedProperty) {
+    highlight_panel(rect);
+    label(
+        "Rental Campaign",
+        rect.x + 16.0,
+        rect.y + 30.0,
+        21,
+        crate::ui::BLUE,
+    );
+    draw_wrapped_text(
+        "Advertising is live. No rent is collected until a tenant starts after the next week closes.",
+        rect.x + 16.0,
+        rect.y + 58.0,
+        rect.w - 32.0,
+        16,
+        TEXT_DIM,
+    );
+    label(
+        &format!("Asking {} / week", format_money(owned.weekly_rent)),
+        rect.x + 16.0,
+        rect.y + 126.0,
+        17,
+        POSITIVE,
+    );
 }
 
 pub(super) fn draw_sell_decision(

@@ -4,8 +4,8 @@ use crate::screens::portfolio_finance_widgets::{draw_loan_control, LoanAction};
 use crate::screens::portfolio_widgets::{
     draw_active_project_decision, draw_contractor_selector, draw_empty_portfolio,
     draw_hold_decision, draw_lease_decision, draw_maintenance_decision, draw_marketing_selector,
-    draw_problem_card, draw_sell_decision, draw_skip_renovation, draw_upgrade_decision,
-    recommended_upgrade,
+    draw_problem_card, draw_rental_campaign, draw_sell_decision, draw_skip_renovation,
+    draw_upgrade_decision, recommended_upgrade,
 };
 use crate::sim::campaign::{weekly_debt_interest, weekly_holding_cost};
 use crate::sim::finance::{borrowing_limit, refinance_capacity};
@@ -77,7 +77,12 @@ impl App {
                 16,
                 TEXT_BRIGHT,
             );
-            let lease_label = if property.is_leased {
+            let lease_label = if property.leasing_weeks_remaining > 0 {
+                format!(
+                    "On rental market | {} / wk",
+                    format_money(property.weekly_rent)
+                )
+            } else if property.is_leased {
                 if let Some(issue) = &property.maintenance_issue {
                     format!(
                         "{} | rent -{} / wk",
@@ -99,6 +104,8 @@ impl App {
                     NEGATIVE
                 } else if property.is_leased {
                     POSITIVE
+                } else if property.leasing_weeks_remaining > 0 {
+                    crate::ui::BLUE
                 } else {
                     WARNING
                 },
@@ -205,6 +212,8 @@ impl App {
             }
         } else if has_active_project {
             draw_active_project_decision(Rect::new(main.x + 18.0, card_y, card_w, 160.0), &owned);
+        } else if owned.leasing_weeks_remaining > 0 {
+            draw_rental_campaign(Rect::new(main.x + 18.0, card_y, card_w, 160.0), &owned);
         } else if owned.is_leased {
             if draw_skip_renovation(
                 Rect::new(main.x + 18.0, card_y, card_w, 160.0),
@@ -232,7 +241,7 @@ impl App {
         }
 
         let hold_rect = Rect::new(main.x + 36.0 + card_w, card_y, card_w, 160.0);
-        if owned.is_leased {
+        if owned.is_leased || owned.leasing_weeks_remaining > 0 {
             if draw_hold_decision(hold_rect, &owned, self.campaign_status.is_finished()) {
                 hold_week = true;
             }

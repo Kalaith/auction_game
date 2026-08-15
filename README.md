@@ -24,7 +24,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - Refinance seasoned rental equity to fund another deposit without selling the home.
 - Read the seller-side auction ledger: reserve, bidder depth, debt cleared, settlement release, and true profit.
 - Read a weekly portfolio statement instead of guessing where rent and cash went.
-- Renovate, place or end tenancies, collect rent, handle scheduled maintenance, hold, or sell purchased properties.
+- Renovate, fund a one-week rental campaign, place or end tenancies, collect rent, handle scheduled maintenance, hold, or sell purchased properties.
 - Track every property, cash, debt, rent, weekly cashflow, fees, repairs, and net worth.
 
 ## Goal

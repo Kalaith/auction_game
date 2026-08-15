@@ -179,6 +179,17 @@ impl App {
                     "Seasoned equity is available. Releasing it raises debt and funds the next deposit."
                         .to_string();
             }
+            "portfolio_leasing" => {
+                self.start_new_game();
+                self.seed_portfolio_capture();
+                if let Some(owned) = self.player.properties.first_mut() {
+                    owned.is_leased = false;
+                    owned.leasing_weeks_remaining = 1;
+                }
+                self.screen = Screen::Portfolio;
+                self.status = "The letting fee is paid. Tap HOLD to close the vacant leasing week."
+                    .to_string();
+            }
             "sale_result" => {
                 self.start_new_game();
                 self.seed_portfolio_capture();
@@ -254,11 +265,12 @@ impl App {
 
     fn seed_portfolio_capture(&mut self) {
         let samples: Vec<Property> = self
-            .available_properties
+            .data
+            .properties
             .iter()
+            .map(Property::from_template)
             .filter(|property| property.hidden_defect_risk < 0.18)
-            .take(2)
-            .cloned()
+            .take(3)
             .collect();
         for property in samples {
             self.seed_owned_property(property);

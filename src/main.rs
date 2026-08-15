@@ -13,10 +13,8 @@ mod ui;
 
 use app::App;
 
-const UI_FONT_SIZES: &[u16] = &[
-    12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 30, 31, 32, 34, 35, 38, 42,
-    44, 74,
-];
+const UI_FONT_SIZES: &[u16] = &[13, 14, 15, 16, 17, 18, 20, 22, 26, 32, 38];
+const LARGE_MONEY_FONT_SAMPLES: &[(u16, &str)] = &[(74, "$0,123456789")];
 
 fn window_conf() -> Conf {
     // Hand-built Conf means no automatic arming: without this the capture run
@@ -41,6 +39,8 @@ fn window_conf() -> Conf {
 async fn main() {
     macroquad_toolkit::ui::prewarm_default_ui_font(UI_FONT_SIZES)
         .expect("toolkit UI font should prewarm");
+    macroquad_toolkit::ui::prewarm_default_ui_font_text(LARGE_MONEY_FONT_SAMPLES)
+        .expect("large money styles should prewarm");
     let title_background =
         Texture2D::from_file_with_format(include_bytes!("../auction_house_title.png"), None);
     let mut app = App::new(title_background);
@@ -50,6 +50,7 @@ async fn main() {
     // which can leave stale glyph coordinates after the texture grows.
     clear_background(crate::ui::BACKGROUND);
     macroquad_toolkit::ui::draw_default_ui_font_atlas_warmup(UI_FONT_SIZES);
+    macroquad_toolkit::ui::draw_default_ui_font_text_atlas_warmup(LARGE_MONEY_FONT_SAMPLES);
     next_frame().await;
 
     // Screenshot harness: when AUCTION_GAME_CAPTURE_PATH is set, seed a scene,
