@@ -70,7 +70,7 @@ impl App {
             ),
             (
                 "4  MAKE IT WORK",
-                "Lease for income, renovate for value, or sell to recycle your deposit into better homes.",
+                "Tap ADVERTISE FOR RENT, survive the vacant week, then choose RENEW or ASK at rent reviews.",
                 ACCENT,
             ),
         ];

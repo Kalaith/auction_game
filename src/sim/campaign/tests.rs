@@ -143,6 +143,33 @@ fn a_disciplined_three_rental_path_can_complete_the_real_campaign() {
 }
 
 #[test]
+fn the_authored_three_rental_path_survives_a_full_rent_review_cycle() {
+    let data = GameData::load();
+    let market = &data.market_events[0];
+    let mut player = Player::new();
+    for id in [6, 8] {
+        acquire_authored_rental(&data, &mut player, id, market);
+    }
+    player.reputation = 3;
+    acquire_authored_rental(&data, &mut player, 5, market);
+    for owned in &mut player.properties {
+        owned.next_rent_review_week = 8;
+    }
+
+    for _ in 0..12 {
+        apply_weekly_pressure(&mut player, market);
+        for owned in &mut player.properties {
+            if crate::sim::rental::rent_review_due(owned) {
+                crate::sim::rental::resolve_rent_review(owned, market, false);
+            }
+        }
+    }
+
+    assert_eq!(campaign_status(&player, market, 13), CampaignStatus::Won);
+    assert!(player.properties.iter().all(|owned| owned.is_leased));
+}
+
+#[test]
 fn postmortem_names_the_largest_normalized_campaign_gap() {
     let market = market(0.0);
     let mut player = Player::new();
