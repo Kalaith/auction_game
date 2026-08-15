@@ -199,6 +199,9 @@ impl App {
                         auction.status = Some(AuctionStatus::PassedIn);
                         auction.player_research_level = ResearchLevel::FullDiligence;
                     }
+                    self.status =
+                        "Auction passed in. Test the vendor, meet the counteroffer, or leave."
+                            .to_string();
                 }
             }
             "portfolio" => {

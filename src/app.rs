@@ -121,8 +121,36 @@ impl App {
         }
 
         if !self.esc_menu_open && self.screen == Screen::Auction {
+            let previous_status = self
+                .current_auction
+                .as_ref()
+                .and_then(|auction| auction.status.clone());
             if let Some(auction) = self.current_auction.as_mut() {
                 update_auction(auction, dt);
+            }
+            let completed_status = self
+                .current_auction
+                .as_ref()
+                .and_then(|auction| auction.status.clone());
+            if previous_status.is_none() {
+                match completed_status {
+                    Some(crate::model::AuctionStatus::PassedIn) => {
+                        self.status =
+                            "Auction passed in. Test the vendor, meet the counteroffer, or leave."
+                                .to_string();
+                    }
+                    Some(crate::model::AuctionStatus::SoldToPlayer) => {
+                        self.status =
+                            "Hammer down. Review the deposit, loan, rent, and cashflow before settling."
+                                .to_string();
+                    }
+                    Some(crate::model::AuctionStatus::SoldToNpc(_)) => {
+                        self.status =
+                            "The room has decided. Review the result, then return to listings."
+                                .to_string();
+                    }
+                    None => {}
+                }
             }
         }
     }
