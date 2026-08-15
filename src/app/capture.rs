@@ -82,6 +82,22 @@ impl App {
                         .to_string();
                 }
             }
+            "auction_won" => {
+                self.start_new_game();
+                if let Some(property) = self.available_properties.first().cloned() {
+                    self.start_auction(property.id);
+                    if let Some(auction) = self.current_auction.as_mut() {
+                        begin_auction_calls(auction);
+                        auction.current_bid = auction.reserve_price;
+                        auction.last_bidder = Some(BidderActor::Player);
+                        auction.on_market_announced = true;
+                        auction.status = Some(AuctionStatus::SoldToPlayer);
+                    }
+                    self.status =
+                        "Hammer down. Review the deposit, loan, rent, and cashflow before settling."
+                            .to_string();
+                }
+            }
             "auction_read" => {
                 self.start_new_game();
                 if let Some(property) = self.available_properties.first().cloned() {

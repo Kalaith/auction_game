@@ -12,12 +12,24 @@ pub(super) fn draw_purchase_debrief(debrief: &PurchaseDebrief, rect: Rect) {
         44,
         ACCENT,
     );
+    label(
+        &format!(
+            "Estimated resale {}",
+            format_money(debrief.estimated_resale)
+        ),
+        rect.x + 28.0,
+        rect.y + 144.0,
+        15,
+        TEXT_DIM,
+    );
     let values = [
-        ("Estimated resale", debrief.estimated_resale),
-        ("Cash to settle", debrief.cash_to_settle),
+        ("10% contract deposit", debrief.contract_deposit),
         ("Cash after settle", debrief.cash_after_settle),
-        ("Fees", debrief.fees),
+        ("New property loan", debrief.loan_amount),
+        ("Purchase + future sale fees", debrief.fees),
         ("Repair allowance", debrief.renovation_allowance),
+        ("Rent appraisal / week", debrief.weekly_rent),
+        ("Rental cashflow / week", debrief.weekly_rental_cashflow),
         ("Projected profit", debrief.projected_profit),
     ];
     for (index, (title, value)) in values.iter().enumerate() {
@@ -25,7 +37,7 @@ pub(super) fn draw_purchase_debrief(debrief: &PurchaseDebrief, rect: Rect) {
             title,
             &format_money(*value),
             rect.x + 28.0,
-            rect.y + 160.0 + index as f32 * 27.0,
+            rect.y + 174.0 + index as f32 * 23.0,
             rect.w - 56.0,
         );
     }
@@ -33,12 +45,12 @@ pub(super) fn draw_purchase_debrief(debrief: &PurchaseDebrief, rect: Rect) {
         label(
             &format!("Over walk-away by {}", format_money(debrief.walkaway_delta)),
             rect.x + 28.0,
-            rect.y + 330.0,
+            rect.y + 350.0,
             15,
             NEGATIVE,
         );
     }
-    let lesson = Rect::new(rect.x + 24.0, rect.y + 346.0, rect.w - 48.0, 86.0);
+    let lesson = Rect::new(rect.x + 24.0, rect.y + 366.0, rect.w - 48.0, 86.0);
     dark_panel(lesson);
     label("Lesson", lesson.x + 14.0, lesson.y + 28.0, 20, TEXT_BRIGHT);
     draw_wrapped_text(

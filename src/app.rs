@@ -9,6 +9,7 @@ use crate::sim::campaign::{
     apply_weekly_pressure, campaign_status, next_unlock_note, suburb_is_unlocked, WeeklyPressure,
 };
 use crate::sim::finance::finance_snapshot;
+use crate::sim::finance::rental_underwrite;
 use crate::sim::maintenance::trigger_due_maintenance;
 use crate::sim::renovation::{
     progress_player_renovations, quote_renovation, start_upgrade_project,
@@ -38,6 +39,10 @@ pub(crate) struct PurchaseDebrief {
     pub(crate) renovation_allowance: i64,
     pub(crate) walkaway_delta: i64,
     pub(crate) projected_profit: i64,
+    pub(crate) contract_deposit: i64,
+    pub(crate) loan_amount: i64,
+    pub(crate) weekly_rent: i64,
+    pub(crate) weekly_rental_cashflow: i64,
     pub(crate) lesson: String,
 }
 
@@ -578,6 +583,9 @@ impl App {
         }
         .max(0);
         let projected_profit = estimated_resale - auction.current_bid - fees - renovation_allowance;
+        let contract_deposit = deposit(auction.current_bid);
+        let loan_amount = auction.current_bid - contract_deposit;
+        let rental = rental_underwrite(&auction.property, self.market(), auction.current_bid);
         let lesson = if walkaway_delta > 0 {
             "You won, but above your own walk-away line. That does not make the deal wrong, but it means the resale has less room to disappoint."
                 .to_string()
@@ -605,6 +613,10 @@ impl App {
             renovation_allowance,
             walkaway_delta,
             projected_profit,
+            contract_deposit,
+            loan_amount,
+            weekly_rent: rental.gross_rent,
+            weekly_rental_cashflow: rental.net_cashflow,
             lesson,
         }
     }
