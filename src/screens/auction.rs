@@ -510,12 +510,24 @@ fn draw_live_decision_panel(
         ACCENT,
     );
     let verdict = if finance.can_buy {
-        bid_verdict(margin, cash_after, next_bid, auction.player_walkaway_price)
+        bid_verdict(
+            margin,
+            cash_after,
+            finance.cash_buffer_target,
+            next_bid,
+            auction.player_walkaway_price,
+        )
     } else {
         finance.stress.label()
     };
     let verdict_color = if finance.can_buy {
-        guidance_color(margin, cash_after, next_bid, auction.player_walkaway_price)
+        guidance_color(
+            margin,
+            cash_after,
+            finance.cash_buffer_target,
+            next_bid,
+            auction.player_walkaway_price,
+        )
     } else {
         NEGATIVE
     };
@@ -582,7 +594,13 @@ fn draw_live_decision_panel(
         rect.x + 45.0,
         rect.y + 418.0,
         15,
-        guidance_color(margin, cash_after, next_bid, auction.player_walkaway_price),
+        guidance_color(
+            margin,
+            cash_after,
+            finance.cash_buffer_target,
+            next_bid,
+            auction.player_walkaway_price,
+        ),
     );
     let jump_note = if auction.jump_bid_available {
         format!("Jump two steps; margin {}.", format_money(jump_margin))

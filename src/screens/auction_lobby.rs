@@ -33,7 +33,7 @@ pub(super) fn draw_auction_day_lobby(
 
     let costs_at_cap = cash_needed_to_settle(auction.player_walkaway_price);
     let rows = [
-        ("Opening call", auction.current_bid),
+        ("Safe cash buffer", finance_at_cap.cash_buffer_target),
         ("Your walk-away", auction.player_walkaway_price),
         ("10% deposit at cap", deposit(auction.player_walkaway_price)),
         ("Cash to settle at cap", costs_at_cap),

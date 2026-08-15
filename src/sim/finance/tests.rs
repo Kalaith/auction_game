@@ -30,6 +30,30 @@ fn finance_snapshot_blocks_deals_above_limit() {
 }
 
 #[test]
+fn the_safe_cash_buffer_scales_with_the_next_portfolio_door() {
+    let mut player = Player::new();
+    let first = finance_snapshot(&player, &market(0.0), 400_000);
+    assert_eq!(first.cash_buffer_target, 18_000);
+
+    let data = GameData::load();
+    for template in data.properties.iter().take(3) {
+        let property = Property::from_template(template);
+        player.properties.push(OwnedProperty::new(
+            property.clone(),
+            property.reserve_price,
+            0,
+            0,
+            0,
+            property.reserve_price,
+            ResearchLevel::StreetScan,
+            WalkawayStyle::Balanced,
+        ));
+    }
+    let fourth = finance_snapshot(&player, &market(0.0), 400_000);
+    assert_eq!(fourth.cash_buffer_target, 32_000);
+}
+
+#[test]
 fn rental_underwrite_prices_the_debt_and_ownership_cost_before_bidding() {
     let data = GameData::load();
     let property = Property::from_template(&data.properties[0]);

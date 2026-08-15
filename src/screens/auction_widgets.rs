@@ -5,6 +5,7 @@ use macroquad::prelude::*;
 pub fn bid_verdict(
     margin: i64,
     cash_after: i64,
+    cash_buffer_target: i64,
     next_bid: i64,
     walkaway_price: i64,
 ) -> &'static str {
@@ -12,7 +13,7 @@ pub fn bid_verdict(
         "Break Plan"
     } else if margin < 0 {
         "Bad Deal"
-    } else if cash_after < 18_000 {
+    } else if cash_after < cash_buffer_target {
         "Thin Cash"
     } else if margin > 35_000 {
         "Safe Bid"
@@ -21,8 +22,14 @@ pub fn bid_verdict(
     }
 }
 
-pub fn guidance_color(margin: i64, cash_after: i64, next_bid: i64, walkaway_price: i64) -> Color {
-    if next_bid > walkaway_price || margin < 0 || cash_after < 18_000 {
+pub fn guidance_color(
+    margin: i64,
+    cash_after: i64,
+    cash_buffer_target: i64,
+    next_bid: i64,
+    walkaway_price: i64,
+) -> Color {
+    if next_bid > walkaway_price || margin < 0 || cash_after < cash_buffer_target {
         WARNING
     } else {
         TEXT_DIM

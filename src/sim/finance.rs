@@ -13,6 +13,8 @@ const RENTAL_INCOME_LEVERAGE: i64 = 280;
 const BID_INCREMENT: i64 = 10_000;
 const MAX_TEST_PRICE: i64 = 2_500_000;
 const REFINANCE_LVR: f32 = 0.80;
+const CASH_BUFFER_PER_HOME: i64 = 8_000;
+const MINIMUM_CASH_BUFFER: i64 = 18_000;
 pub const REFINANCE_FEE: i64 = 2_000;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -36,6 +38,7 @@ impl FinanceStress {
 pub struct FinanceSnapshot {
     pub headroom_after: i64,
     pub cash_after_settle: i64,
+    pub cash_buffer_target: i64,
     pub can_buy: bool,
     pub stress: FinanceStress,
 }
@@ -107,10 +110,12 @@ pub fn finance_snapshot(player: &Player, market: &MarketEvent, price: i64) -> Fi
     let debt_after = player.debt + debt_needed;
     let headroom_after = limit - debt_after;
     let cash_after_settle = player.cash - cash_needed_to_settle(price);
+    let cash_buffer_target =
+        ((player.properties.len() as i64 + 1) * CASH_BUFFER_PER_HOME).max(MINIMUM_CASH_BUFFER);
     let can_buy = cash_after_settle >= 0 && headroom_after >= 0;
     let stress = if !can_buy || headroom_after < 20_000 {
         FinanceStress::Maxed
-    } else if cash_after_settle < 18_000 || headroom_after < 80_000 {
+    } else if cash_after_settle < cash_buffer_target || headroom_after < 80_000 {
         FinanceStress::Tight
     } else {
         FinanceStress::Healthy
@@ -119,6 +124,7 @@ pub fn finance_snapshot(player: &Player, market: &MarketEvent, price: i64) -> Fi
     FinanceSnapshot {
         headroom_after,
         cash_after_settle,
+        cash_buffer_target,
         can_buy,
         stress,
     }
