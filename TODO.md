@@ -1,9 +1,5 @@
 # TODO — Auction House Tycoon
 
-## Auction depth
-
-- Add deterministic coverage for every emotional stretch archetype.
-
 ## Presentation
 
 - Add unique procedural facade details for premium, unit, and large-block properties.

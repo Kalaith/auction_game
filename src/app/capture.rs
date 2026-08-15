@@ -1,7 +1,7 @@
 use super::App;
 use crate::model::{
-    AuctionStatus, CampaignStatus, OwnedProperty, Property, ResearchLevel, RivalRecord,
-    WalkawayStyle,
+    AuctionStatus, AuctionTemperature, BidderActor, BidderMood, CampaignStatus, OwnedProperty,
+    Property, ResearchLevel, RivalRecord, WalkawayStyle,
 };
 use crate::screens::Screen;
 use crate::sim::auction_sim::{begin_auction_calls, hold_player_position, place_player_bid};
@@ -90,6 +90,39 @@ impl App {
                         begin_auction_calls(auction);
                         hold_player_position(auction);
                     }
+                }
+            }
+            "auction_stretch" => {
+                self.start_new_game();
+                if let Some(property) = self.available_properties.first().cloned() {
+                    self.start_auction(property.id);
+                    if let Some(auction) = self.current_auction.as_mut() {
+                        begin_auction_calls(auction);
+                        auction.temperature = AuctionTemperature::FomoSpiral;
+                        auction.seconds_remaining = 14.0;
+                        auction.call_timer = 99.0;
+                        for bidder in &mut auction.bidders {
+                            bidder.reaction_timer = 99.0;
+                        }
+                        if let Some(index) = auction.bidders.iter().position(|bidder| {
+                            bidder.bidder_type == crate::model::BidderType::Renovator
+                        }) {
+                            let bidder = &mut auction.bidders[index];
+                            bidder.stretch_bid_used = true;
+                            bidder.mood = BidderMood::Stretching;
+                            bidder.heat = 94;
+                            bidder.tell =
+                                "Upside fantasy is outrunning the repair budget.".to_string();
+                            auction.current_bid = bidder.max_price + auction.bid_increment;
+                            auction.last_bidder = Some(BidderActor::Player);
+                            auction.last_room_read = Some(format!(
+                                "{} has crossed the repair budget; another bid may be emotional.",
+                                bidder.name
+                            ));
+                        }
+                    }
+                    self.status = "A rival is stretching. Read the cause before chasing the room."
+                        .to_string();
                 }
             }
             "passed_in" => {

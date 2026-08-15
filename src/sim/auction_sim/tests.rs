@@ -253,6 +253,60 @@ fn ego_bidder_can_stretch_when_the_player_makes_it_personal() {
 }
 
 #[test]
+fn first_home_buyer_stretches_only_when_the_final_call_feels_close() {
+    let mut auction = auction();
+    auction.bidders[0].bidder_type = BidderType::FirstHomeBuyer;
+    auction.bidders[0].overbid_tendency = 0.7;
+    let limit = auction.bidders[0].max_price;
+    auction.temperature = AuctionTemperature::QuietRoom;
+    auction.seconds_remaining = 30.0;
+    assert_eq!(bidder_effective_ceiling(&auction, 0), limit);
+
+    auction.seconds_remaining = 15.0;
+    assert!(bidder_effective_ceiling(&auction, 0) > limit);
+}
+
+#[test]
+fn renovator_stretches_for_rough_upside_only_in_an_emotional_room() {
+    let mut auction = auction();
+    auction.bidders[0].bidder_type = BidderType::Renovator;
+    auction.bidders[0].overbid_tendency = 0.7;
+    let limit = auction.bidders[0].max_price;
+    auction.temperature = AuctionTemperature::FomoSpiral;
+    auction.property.condition = Condition::Solid;
+    assert_eq!(bidder_effective_ceiling(&auction, 0), limit);
+
+    auction.property.condition = Condition::Tired;
+    assert!(bidder_effective_ceiling(&auction, 0) > limit);
+    auction.current_bid = limit;
+    place_npc_bid(&mut auction, 0);
+    assert!(auction.bidders[0].stretch_bid_used);
+    assert!(auction.bidders[0].tell.contains("repair budget"));
+}
+
+#[test]
+fn rational_archetypes_never_gain_an_emotional_ceiling() {
+    for bidder_type in [
+        BidderType::Investor,
+        BidderType::Developer,
+        BidderType::BargainHunter,
+    ] {
+        let mut auction = auction();
+        auction.temperature = AuctionTemperature::FinalCall;
+        auction.bidders[0].bidder_type = bidder_type;
+        auction.bidders[0].overbid_tendency = 0.68;
+        let limit = auction.bidders[0].max_price;
+
+        assert_eq!(
+            bidder_effective_ceiling(&auction, 0),
+            limit,
+            "{} should stay rational",
+            bidder_type.label()
+        );
+    }
+}
+
+#[test]
 fn quick_resolution_always_reaches_a_hammer_or_pass_in() {
     let mut auction = auction();
     stop_player_bidding(&mut auction);

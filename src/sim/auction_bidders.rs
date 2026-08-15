@@ -57,6 +57,9 @@ pub(super) fn tell_for(
         {
             "Seeing upside in the damage."
         }
+        (BidderType::Renovator, BidderMood::Stretching) => {
+            "Upside fantasy is outrunning the repair budget."
+        }
         (BidderType::Developer, BidderMood::Interested) if property.land_size >= 600 => {
             "Land size keeps them engaged."
         }

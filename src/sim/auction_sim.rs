@@ -395,10 +395,16 @@ fn place_npc_bid(auction: &mut Auction, index: usize) {
     if was_stretch {
         auction.bidders[index].stretch_bid_used = true;
         auction.bidders[index].mood = BidderMood::Stretching;
+        auction.bidders[index].tell = tell_for(
+            auction.bidders[index].bidder_type,
+            BidderMood::Stretching,
+            &auction.property,
+        )
+        .to_string();
     } else {
         auction.bidders[index].mood = BidderMood::Interested;
+        auction.bidders[index].tell = bid_tell(&auction.bidders[index]).to_string();
     }
-    auction.bidders[index].tell = bid_tell(&auction.bidders[index]).to_string();
     auction.bidders[index].reaction_timer = auction_rng_range(auction, 1.2, 3.2);
     extend_if_needed(auction);
     auction.temperature = auction_temperature(auction);
