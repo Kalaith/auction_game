@@ -1,10 +1,24 @@
 use super::App;
 use crate::model::PropertyId;
+use crate::sim::finance::pay_down_principal;
 use crate::sim::maintenance::repair_maintenance;
 use crate::sim::rental::{end_tenancy, leasing_cost, weekly_rent_for_owned};
 use crate::ui::format_money;
 
 impl App {
+    pub(crate) fn pay_down_property_debt(&mut self, property_id: PropertyId) {
+        let paid = pay_down_principal(&mut self.player, property_id, 10_000);
+        if paid == 0 {
+            self.status =
+                "Keep at least $10,000 cash available for a principal payment.".to_string();
+            return;
+        }
+        self.status = format!(
+            "Paid {} off the selected loan. Interest pressure and bank debt both fell.",
+            format_money(paid)
+        );
+    }
+
     pub(crate) fn lease_property(&mut self, property_id: PropertyId) {
         let Some(index) = self
             .player

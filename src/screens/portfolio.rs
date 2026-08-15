@@ -2,9 +2,9 @@ use crate::app::App;
 use crate::model::PropertyId;
 use crate::screens::portfolio_widgets::{
     draw_active_project_decision, draw_contractor_selector, draw_empty_portfolio,
-    draw_hold_decision, draw_lease_decision, draw_maintenance_decision, draw_marketing_selector,
-    draw_problem_card, draw_sell_decision, draw_skip_renovation, draw_upgrade_decision,
-    recommended_upgrade,
+    draw_hold_decision, draw_lease_decision, draw_loan_control, draw_maintenance_decision,
+    draw_marketing_selector, draw_problem_card, draw_sell_decision, draw_skip_renovation,
+    draw_upgrade_decision, recommended_upgrade,
 };
 use crate::sim::campaign::{weekly_debt_interest, weekly_holding_cost};
 use crate::sim::finance::borrowing_limit;
@@ -179,6 +179,11 @@ impl App {
             bank_room,
             self.market(),
         );
+        let pay_down = draw_loan_control(
+            Rect::new(main.x + main.w - 298.0, main.y + 14.0, 280.0, 82.0),
+            &owned,
+            self.player.cash,
+        );
 
         let card_y = main.y + 272.0;
         let card_w = (main.w - 54.0) / 3.0;
@@ -254,7 +259,9 @@ impl App {
         draw_contractor_selector(self, main, has_active_project);
         draw_marketing_selector(self, main, &owned);
 
-        if let Some((property_id, upgrade_id)) = upgrade_action {
+        if pay_down {
+            self.pay_down_property_debt(owned.property.id);
+        } else if let Some((property_id, upgrade_id)) = upgrade_action {
             self.buy_upgrade(property_id, &upgrade_id);
         }
         if repair_maintenance_action {

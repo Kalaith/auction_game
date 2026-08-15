@@ -1,4 +1,4 @@
-use crate::model::{MarketEvent, Player};
+use crate::model::{MarketEvent, Player, PropertyId};
 use crate::sim::rental::portfolio_rental_snapshot;
 use crate::sim::valuation::{cash_needed_to_settle, deposit, net_worth, round_down_to_increment};
 
@@ -80,6 +80,25 @@ pub fn max_financeable_bid(player: &Player, market: &MarketEvent) -> i64 {
         }
     }
     best
+}
+
+pub fn pay_down_principal(player: &mut Player, property_id: PropertyId, requested: i64) -> i64 {
+    let Some(index) = player
+        .properties
+        .iter()
+        .position(|owned| owned.property.id == property_id)
+    else {
+        return 0;
+    };
+    let payment = requested.min(player.properties[index].debt).max(0);
+    if payment == 0 || player.cash < payment {
+        return 0;
+    }
+
+    player.cash -= payment;
+    player.debt -= payment;
+    player.properties[index].debt -= payment;
+    payment
 }
 
 #[cfg(test)]

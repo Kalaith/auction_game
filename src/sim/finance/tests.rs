@@ -30,6 +30,25 @@ fn finance_snapshot_blocks_deals_above_limit() {
 }
 
 #[test]
+fn principal_payment_reduces_cash_and_both_debt_ledgers() {
+    let data = GameData::load();
+    let market = &data.market_events[0];
+    let mut player = Player::new();
+    let property = Property::from_template(&data.properties[0]);
+    acquire_and_lease(&mut player, property, market);
+    let property_id = player.properties[0].property.id;
+    let cash_before = player.cash;
+    let debt_before = player.debt;
+
+    let paid = pay_down_principal(&mut player, property_id, 10_000);
+
+    assert_eq!(paid, 10_000);
+    assert_eq!(player.cash, cash_before - paid);
+    assert_eq!(player.debt, debt_before - paid);
+    assert_eq!(player.properties[0].debt, debt_before - paid);
+}
+
+#[test]
 fn two_performing_rentals_and_discipline_open_the_third_purchase() {
     let data = GameData::load();
     let market = &data.market_events[0];

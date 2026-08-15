@@ -67,6 +67,9 @@ impl App {
                 self.start_new_game();
                 self.seed_portfolio_capture();
                 self.screen = Screen::Portfolio;
+                self.status =
+                    "Compare the selected home's cashflow, debt, condition, and next move."
+                        .to_string();
             }
             "portfolio_maintenance" => {
                 self.start_new_game();
@@ -76,6 +79,8 @@ impl App {
                 }
                 trigger_due_maintenance(&mut self.player);
                 self.screen = Screen::Portfolio;
+                self.status = "A maintenance check found an issue. Repair it to restore full rent."
+                    .to_string();
             }
             "conclusion" => {
                 self.start_new_game();

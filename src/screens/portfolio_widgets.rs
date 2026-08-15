@@ -68,13 +68,14 @@ pub(super) fn draw_problem_card(
         };
         (diagnosis.summary.clone(), color)
     };
-    label_fit(
+    draw_limited_lines(
         &summary,
         rect.x + 16.0,
-        rect.y + 62.0,
+        rect.y + 58.0,
         rect.w - 32.0,
         17,
         color,
+        2,
     );
     let detail = owned.active_renovation.as_ref().map_or_else(
         || {
@@ -99,10 +100,10 @@ pub(super) fn draw_problem_card(
             )
         },
     );
-    label_fit(
+    draw_limited_lines(
         &detail,
         rect.x + 16.0,
-        rect.y + 96.0,
+        rect.y + 101.0,
         rect.w - 32.0,
         15,
         if bank_room >= 80_000 {
@@ -112,7 +113,33 @@ pub(super) fn draw_problem_card(
         } else {
             NEGATIVE
         },
+        2,
     );
+}
+
+pub(super) fn draw_loan_control(rect: Rect, owned: &OwnedProperty, cash: i64) -> bool {
+    dark_panel(rect);
+    label("PROPERTY LOAN", rect.x + 14.0, rect.y + 22.0, 13, TEXT_DIM);
+    label(
+        &format_money(owned.debt),
+        rect.x + 14.0,
+        rect.y + 50.0,
+        24,
+        TEXT_BRIGHT,
+    );
+    label(
+        "Pay $10k | bank room +$10k",
+        rect.x + 14.0,
+        rect.y + 72.0,
+        13,
+        POSITIVE,
+    );
+    button(
+        Rect::new(rect.x + rect.w - 114.0, rect.y + 20.0, 98.0, 38.0),
+        "Pay $10k",
+        owned.debt > 0 && cash >= 10_000,
+        ButtonTone::Secondary,
+    )
 }
 
 pub(super) fn draw_maintenance_decision(rect: Rect, owned: &OwnedProperty, cash: i64) -> bool {
@@ -596,7 +623,7 @@ pub(super) fn draw_contractor_selector(app: &mut App, main: Rect, locked: bool) 
 }
 
 pub(super) fn draw_marketing_selector(app: &mut App, main: Rect, owned: &OwnedProperty) {
-    label("Marketing", main.x + 820.0, main.y + 266.0, 16, TEXT_DIM);
+    label("Marketing", main.x + 744.0, main.y + 266.0, 16, TEXT_DIM);
     let options = [
         MarketingPlan::Budget,
         MarketingPlan::Standard,
@@ -606,9 +633,9 @@ pub(super) fn draw_marketing_selector(app: &mut App, main: Rect, owned: &OwnedPr
         let selected = app.selected_marketing_plan == *plan;
         if button(
             Rect::new(
-                main.x + 920.0 + index as f32 * 96.0,
+                main.x + 840.0 + index as f32 * 90.0,
                 main.y + 240.0,
-                88.0,
+                84.0,
                 30.0,
             ),
             plan.label(),
@@ -635,6 +662,33 @@ fn short_note(note: &str) -> &str {
     note.char_indices()
         .nth(30)
         .map_or(note, |(index, _)| &note[..index])
+}
+
+fn draw_limited_lines(
+    text: &str,
+    x: f32,
+    y: f32,
+    max_width: f32,
+    size: u16,
+    color: Color,
+    max_lines: usize,
+) {
+    let size = size.max(17);
+    let mut lines = macroquad_toolkit::ui::wrap_text(text, max_width, size as f32);
+    let was_truncated = lines.len() > max_lines;
+    lines.truncate(max_lines);
+    if was_truncated {
+        if let Some(last) = lines.last_mut() {
+            *last = macroquad_toolkit::ui::truncate_text_to_width(
+                &format!("{last}..."),
+                max_width,
+                size as f32,
+            );
+        }
+    }
+    for (index, line) in lines.iter().enumerate() {
+        label(line, x, y + index as f32 * (size as f32 + 5.0), size, color);
+    }
 }
 
 fn project_status(project: &ActiveRenovation) -> String {
