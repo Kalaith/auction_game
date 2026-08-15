@@ -10,7 +10,10 @@ use crate::sim::auction_bidders::{
     temperature_bid_modifier, BID_INCREMENT,
 };
 #[cfg(test)]
-use crate::sim::auction_events::{accept_post_auction_offer, post_auction_offer};
+use crate::sim::auction_events::{
+    accept_post_auction_offer, post_auction_offer, test_vendor_at_passed_in_price,
+    PostAuctionTestResult,
+};
 use crate::sim::auction_events::{announce_on_market, place_vendor_bid, should_place_vendor_bid};
 use crate::sim::valuation::round_down_to_increment;
 use macroquad_toolkit::rng::SeededRng;
@@ -90,6 +93,7 @@ pub fn create_auction(
         vendor_bid_used: false,
         last_room_read: None,
         sold_post_auction: false,
+        post_auction_tested: false,
         has_started: false,
         rng_state: auction_seed(property, market),
     }

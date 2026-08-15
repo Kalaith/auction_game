@@ -349,3 +349,37 @@ fn passed_in_vendor_counter_can_be_accepted_below_reserve() {
     assert_eq!(auction.current_bid, offer);
     assert_eq!(auction.status, Some(AuctionStatus::SoldToPlayer));
 }
+
+#[test]
+fn a_passed_in_buyer_can_test_a_flexible_vendor_once() {
+    let mut auction = auction();
+    auction.property.buyer_demand = 45;
+    auction.current_bid = auction.reserve_price - 20_000;
+    auction.status = Some(AuctionStatus::PassedIn);
+    let tested_price = auction.current_bid;
+
+    assert_eq!(
+        test_vendor_at_passed_in_price(&mut auction),
+        Some(PostAuctionTestResult::Accepted(tested_price))
+    );
+    assert_eq!(auction.status, Some(AuctionStatus::SoldToPlayer));
+    assert!(auction.sold_post_auction);
+}
+
+#[test]
+fn a_rejected_passed_in_test_leaves_the_vendor_counter_available() {
+    let mut auction = auction();
+    auction.property.buyer_demand = 80;
+    auction.current_bid = auction.reserve_price - 30_000;
+    auction.status = Some(AuctionStatus::PassedIn);
+
+    let counter = post_auction_offer(&auction).unwrap();
+    assert_eq!(
+        test_vendor_at_passed_in_price(&mut auction),
+        Some(PostAuctionTestResult::Rejected(counter))
+    );
+    assert_eq!(auction.status, Some(AuctionStatus::PassedIn));
+    assert!(auction.post_auction_tested);
+    assert_eq!(test_vendor_at_passed_in_price(&mut auction), None);
+    assert!(accept_post_auction_offer(&mut auction));
+}

@@ -90,6 +90,8 @@ pub struct Auction {
     pub last_room_read: Option<String>,
     #[serde(default)]
     pub sold_post_auction: bool,
+    #[serde(default)]
+    pub post_auction_tested: bool,
     #[serde(default = "auction_started_default")]
     pub has_started: bool,
     #[serde(default = "auction_rng_default")]

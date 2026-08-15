@@ -71,3 +71,53 @@ pub fn accept_post_auction_offer(auction: &mut Auction) -> bool {
     );
     true
 }
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PostAuctionTestResult {
+    Accepted(i64),
+    Rejected(i64),
+}
+
+pub fn test_vendor_at_passed_in_price(auction: &mut Auction) -> Option<PostAuctionTestResult> {
+    if auction.status != Some(AuctionStatus::PassedIn) || auction.post_auction_tested {
+        return None;
+    }
+    auction.post_auction_tested = true;
+    let offer = auction.current_bid;
+    if offer >= vendor_acceptance_floor(auction) {
+        auction.last_bidder = Some(BidderActor::Player);
+        auction.status = Some(AuctionStatus::SoldToPlayer);
+        auction.sold_post_auction = true;
+        push_log(
+            auction,
+            format!(
+                "Vendor accepts your passed-in offer of {}.",
+                crate::ui::format_money(offer)
+            ),
+        );
+        Some(PostAuctionTestResult::Accepted(offer))
+    } else {
+        let counter = post_auction_offer(auction).unwrap_or(auction.reserve_price);
+        push_log(
+            auction,
+            format!(
+                "Vendor rejects {} and holds at {}.",
+                crate::ui::format_money(offer),
+                crate::ui::format_money(counter)
+            ),
+        );
+        Some(PostAuctionTestResult::Rejected(counter))
+    }
+}
+
+fn vendor_acceptance_floor(auction: &Auction) -> i64 {
+    let concession =
+        if auction.property.hidden_defect_risk >= 0.55 || auction.property.buyer_demand <= 50 {
+            30_000
+        } else if auction.property.buyer_demand <= 70 {
+            20_000
+        } else {
+            10_000
+        };
+    auction.reserve_price - concession
+}

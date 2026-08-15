@@ -1,11 +1,15 @@
-use crate::app::{App, PurchaseDebrief};
+use crate::app::App;
 use crate::model::{Auction, AuctionStatus, AuctionTemperature, BidderActor};
+use crate::screens::auction_debrief::draw_purchase_debrief;
 use crate::screens::auction_lobby::{draw_auction_day_lobby, AuctionLobbyAction};
 use crate::screens::auction_widgets::{
     bid_verdict, draw_heat_bar, guidance_color, money_color, mood_color,
 };
 use crate::screens::Screen;
-use crate::sim::auction_events::{accept_post_auction_offer, post_auction_offer};
+use crate::sim::auction_events::{
+    accept_post_auction_offer, post_auction_offer, test_vendor_at_passed_in_price,
+    PostAuctionTestResult,
+};
 use crate::sim::auction_sim::{
     begin_auction_calls, hold_player_position, place_player_bid, place_player_jump_bid,
     quick_resolve_auction, stop_player_bidding, AUCTION_DURATION_SECONDS,
@@ -27,6 +31,7 @@ enum AuctionUiAction {
     Settle,
     ReturnToListings,
     AcceptPostAuction,
+    TestPostAuction,
 }
 
 impl App {
@@ -175,6 +180,25 @@ impl App {
                     }
                 }
             }
+            Some(AuctionUiAction::TestPostAuction) => {
+                if let Some(auction) = self.current_auction.as_mut() {
+                    match test_vendor_at_passed_in_price(auction) {
+                        Some(PostAuctionTestResult::Accepted(price)) => {
+                            self.status = format!(
+                                "Vendor accepted your {} offer. Review, then tap SETTLE PURCHASE.",
+                                format_money(price)
+                            );
+                        }
+                        Some(PostAuctionTestResult::Rejected(counter)) => {
+                            self.status = format!(
+                                "Vendor rejected the test offer and holds at {}.",
+                                format_money(counter)
+                            );
+                        }
+                        None => {}
+                    }
+                }
+            }
             None => {}
         }
     }
@@ -189,7 +213,7 @@ impl App {
         match status {
             AuctionStatus::SoldToPlayer => {
                 let debrief = self.purchase_debrief_for_auction(auction);
-                self.draw_purchase_debrief(&debrief, rect);
+                draw_purchase_debrief(&debrief, rect);
                 if button(
                     Rect::new(rect.x + 36.0, rect.y + rect.h - 64.0, rect.w - 72.0, 44.0),
                     "Settle Purchase",
@@ -257,6 +281,8 @@ impl App {
                 );
                 let offer = post_auction_offer(auction).unwrap_or(auction.reserve_price);
                 let offer_finance = finance_snapshot(&self.player, self.market(), offer);
+                let test_finance =
+                    finance_snapshot(&self.player, self.market(), auction.current_bid);
                 label(
                     "Vendor counteroffer",
                     rect.x + 26.0,
@@ -291,9 +317,37 @@ impl App {
                     16,
                     TEXT_DIM,
                 );
+                label_fit(
+                    if auction.post_auction_tested {
+                        "Your lower offer was rejected. The vendor counter still stands."
+                    } else {
+                        "Test the vendor at the passed-in price, or meet their counter now."
+                    },
+                    rect.x + 28.0,
+                    rect.y + 270.0,
+                    rect.w - 56.0,
+                    15,
+                    if auction.post_auction_tested {
+                        WARNING
+                    } else {
+                        crate::ui::BLUE
+                    },
+                );
                 if button(
-                    Rect::new(rect.x + 26.0, rect.y + rect.h - 64.0, 210.0, 44.0),
-                    &format!("BUY {}", format_money(offer)),
+                    Rect::new(rect.x + 26.0, rect.y + rect.h - 64.0, 148.0, 44.0),
+                    &if auction.post_auction_tested {
+                        "OFFER REJECTED".to_string()
+                    } else {
+                        format!("OFFER {}", format_money(auction.current_bid))
+                    },
+                    !auction.post_auction_tested && test_finance.can_buy,
+                    ButtonTone::Secondary,
+                ) {
+                    return Some(AuctionUiAction::TestPostAuction);
+                }
+                if button(
+                    Rect::new(rect.x + 184.0, rect.y + rect.h - 64.0, 166.0, 44.0),
+                    &format!("MEET {}", format_money(offer)),
                     offer_finance.can_buy,
                     if offer <= auction.player_walkaway_price {
                         ButtonTone::Primary
@@ -304,8 +358,8 @@ impl App {
                     return Some(AuctionUiAction::AcceptPostAuction);
                 }
                 if button(
-                    Rect::new(rect.x + rect.w - 206.0, rect.y + rect.h - 64.0, 180.0, 44.0),
-                    "LEAVE THE DEAL",
+                    Rect::new(rect.x + rect.w - 150.0, rect.y + rect.h - 64.0, 124.0, 44.0),
+                    "LEAVE",
                     true,
                     ButtonTone::Ghost,
                 ) {
@@ -314,55 +368,6 @@ impl App {
             }
         }
         None
-    }
-
-    fn draw_purchase_debrief(&self, debrief: &PurchaseDebrief, rect: Rect) {
-        label("You Won", rect.x + 26.0, rect.y + 44.0, 32, TEXT_BRIGHT);
-        label(&debrief.address, rect.x + 30.0, rect.y + 70.0, 17, TEXT_DIM);
-        label(
-            &format_money(debrief.purchase_price),
-            rect.x + 26.0,
-            rect.y + 118.0,
-            44,
-            ACCENT,
-        );
-        let values = [
-            ("Estimated resale", debrief.estimated_resale),
-            ("Cash to settle", debrief.cash_to_settle),
-            ("Cash after settle", debrief.cash_after_settle),
-            ("Fees", debrief.fees),
-            ("Repair allowance", debrief.renovation_allowance),
-            ("Projected profit", debrief.projected_profit),
-        ];
-        for (index, (title, value)) in values.iter().enumerate() {
-            draw_value(
-                title,
-                &format_money(*value),
-                rect.x + 28.0,
-                rect.y + 160.0 + index as f32 * 27.0,
-                rect.w - 56.0,
-            );
-        }
-        if debrief.walkaway_delta > 0 {
-            label(
-                &format!("Over walk-away by {}", format_money(debrief.walkaway_delta)),
-                rect.x + 28.0,
-                rect.y + 330.0,
-                15,
-                NEGATIVE,
-            );
-        }
-        let lesson = Rect::new(rect.x + 24.0, rect.y + 346.0, rect.w - 48.0, 86.0);
-        dark_panel(lesson);
-        label("Lesson", lesson.x + 14.0, lesson.y + 28.0, 20, TEXT_BRIGHT);
-        draw_wrapped_text(
-            &debrief.lesson,
-            lesson.x + 14.0,
-            lesson.y + 56.0,
-            lesson.w - 28.0,
-            16,
-            TEXT,
-        );
     }
 }
 
