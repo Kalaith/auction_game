@@ -139,6 +139,9 @@ impl App {
         let owned = self.player.properties[self.portfolio_index].clone();
         let estimate = current_value(&owned, self.market());
         let property_week = property_cashflow(&owned, self.market());
+        let paydown_amount = 10_000.min(owned.debt).max(0);
+        let paydown_interest_saving = property_week.loan_interest
+            - weekly_debt_interest(owned.debt - paydown_amount, self.market());
         let refinance_room = refinance_capacity(&self.player, owned.property.id, self.market());
         let refinance_interest_increase =
             weekly_debt_interest(owned.debt + refinance_room, self.market())
@@ -217,6 +220,7 @@ impl App {
             Rect::new(main.x + main.w - 298.0, main.y + 14.0, 280.0, 82.0),
             &owned,
             self.player.cash,
+            paydown_interest_saving,
             refinance_room,
             (refinance_room - REFINANCE_FEE).max(0),
             refinance_interest_increase,

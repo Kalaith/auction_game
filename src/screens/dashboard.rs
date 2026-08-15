@@ -290,7 +290,7 @@ impl App {
             ),
             (
                 "Weekly Rent",
-                format_compact_money(weekly_rent),
+                format_money(weekly_rent),
                 format!(
                     "Goal {} | {reputation_note}",
                     format_money(CAMPAIGN_GOAL_WEEKLY_RENT)

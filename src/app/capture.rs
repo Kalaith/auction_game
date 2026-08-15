@@ -182,6 +182,9 @@ impl App {
             "dashboard_weekly" => {
                 self.start_new_game();
                 self.seed_portfolio_capture();
+                if let Some(removed) = self.player.properties.pop() {
+                    self.player.debt -= removed.debt;
+                }
                 self.screen = Screen::Dashboard;
                 self.advance_week();
                 self.screen = Screen::Dashboard;

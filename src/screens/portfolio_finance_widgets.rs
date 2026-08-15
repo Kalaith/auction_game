@@ -12,6 +12,7 @@ pub(super) fn draw_loan_control(
     rect: Rect,
     owned: &OwnedProperty,
     cash: i64,
+    paydown_interest_saving: i64,
     refinance_capacity: i64,
     refinance_cash: i64,
     refinance_interest_increase: i64,
@@ -19,7 +20,10 @@ pub(super) fn draw_loan_control(
 ) -> Option<LoanAction> {
     dark_panel(rect);
     label_fit(
-        &format!("LOAN · {lvr_percent:.0}% LVR"),
+        &format!(
+            "{lvr_percent:.0}% · -{}/w",
+            format_compact_money(paydown_interest_saving)
+        ),
         rect.x + 14.0,
         rect.y + 22.0,
         rect.w - 174.0,
