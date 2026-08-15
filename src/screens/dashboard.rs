@@ -1,7 +1,9 @@
 use crate::app::App;
-use crate::model::{Property, CAMPAIGN_GOAL_NET_WORTH};
+use crate::model::{
+    Property, CAMPAIGN_GOAL_NET_WORTH, CAMPAIGN_GOAL_PROPERTIES, CAMPAIGN_GOAL_WEEKLY_RENT,
+};
 use crate::screens::Screen;
-use crate::sim::campaign::next_unlock_note;
+use crate::sim::campaign::{campaign_progress, next_unlock_note};
 use crate::sim::finance::max_financeable_bid;
 use crate::sim::valuation::{estimated_value_range, net_worth};
 use crate::ui::*;
@@ -72,7 +74,7 @@ impl App {
     fn draw_dashboard_stats(&self, x: f32, y: f32, width: f32, net_worth_value: i64) {
         let gap = 12.0;
         let card_w = (width - gap * 3.0) / 4.0;
-        let progress = net_worth_value as f32 / CAMPAIGN_GOAL_NET_WORTH as f32;
+        let (property_count, weekly_rent, _) = campaign_progress(&self.player, self.market());
         let buying_power = max_financeable_bid(&self.player, self.market());
         let reputation_note = format!("Rep {:+}", self.player.reputation);
         let stats = [
@@ -89,15 +91,22 @@ impl App {
                 POSITIVE,
             ),
             (
-                "Goal",
-                format!("{:.0}%", progress.clamp(0.0, 1.0) * 100.0),
-                "To $1.0m".to_string(),
+                "Portfolio",
+                format!("{property_count}/{CAMPAIGN_GOAL_PROPERTIES}"),
+                format!(
+                    "Net worth {} / {}",
+                    format_compact_money(net_worth_value),
+                    format_compact_money(CAMPAIGN_GOAL_NET_WORTH)
+                ),
                 ACCENT,
             ),
             (
-                "Net Worth",
-                format_compact_money(net_worth_value),
-                reputation_note,
+                "Weekly Rent",
+                format_compact_money(weekly_rent),
+                format!(
+                    "Goal {} | {reputation_note}",
+                    format_compact_money(CAMPAIGN_GOAL_WEEKLY_RENT)
+                ),
                 crate::ui::BLUE,
             ),
         ];

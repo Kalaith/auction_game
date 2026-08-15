@@ -293,6 +293,51 @@ pub(super) fn draw_hold_decision(
     )
 }
 
+pub(super) fn draw_lease_decision(
+    rect: Rect,
+    weekly_rent: i64,
+    leasing_cost: i64,
+    cash: i64,
+    locked: bool,
+) -> bool {
+    highlight_panel(rect);
+    label(
+        "Place A Tenant",
+        rect.x + 16.0,
+        rect.y + 30.0,
+        21,
+        TEXT_BRIGHT,
+    );
+    draw_wrapped_text(
+        "Advertise the home and turn this purchase into a working portfolio asset.",
+        rect.x + 16.0,
+        rect.y + 58.0,
+        rect.w - 32.0,
+        16,
+        TEXT_DIM,
+    );
+    label(
+        &format!("{} / week", format_money(weekly_rent)),
+        rect.x + 16.0,
+        rect.y + 108.0,
+        18,
+        POSITIVE,
+    );
+    label(
+        &format!("Leasing cost {}", format_money(leasing_cost)),
+        rect.x + 16.0,
+        rect.y + 132.0,
+        15,
+        TEXT_DIM,
+    );
+    button(
+        Rect::new(rect.x + rect.w - 124.0, rect.y + rect.h - 46.0, 104.0, 34.0),
+        "Lease",
+        !locked && cash >= leasing_cost,
+        ButtonTone::Primary,
+    )
+}
+
 pub(super) fn draw_sell_decision(
     rect: Rect,
     position: i64,

@@ -12,7 +12,7 @@ pub struct Player {
 impl Player {
     pub fn new() -> Self {
         Self {
-            cash: 150_000,
+            cash: 220_000,
             debt: 0,
             properties: Vec::new(),
             reputation: 0,
@@ -34,6 +34,14 @@ pub struct OwnedProperty {
     pub active_renovation: Option<ActiveRenovation>,
     pub upgrades: Vec<CompletedUpgrade>,
     pub hidden_defect_discovered: bool,
+    #[serde(default)]
+    pub is_leased: bool,
+    #[serde(default)]
+    pub weekly_rent: i64,
+    #[serde(default)]
+    pub rent_received: i64,
+    #[serde(default)]
+    pub operating_spend: i64,
 }
 
 impl OwnedProperty {
@@ -62,6 +70,10 @@ impl OwnedProperty {
             active_renovation: None,
             upgrades: Vec::new(),
             hidden_defect_discovered,
+            is_leased: false,
+            weekly_rent: 0,
+            rent_received: 0,
+            operating_spend: 0,
         }
     }
 
@@ -90,5 +102,9 @@ impl OwnedProperty {
 
     pub fn holding_spend(&self) -> i64 {
         i64::from(self.weeks_held) * self.property.holding_cost_per_week
+    }
+
+    pub fn rental_profit(&self) -> i64 {
+        self.rent_received - self.operating_spend
     }
 }

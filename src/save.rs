@@ -27,6 +27,8 @@ struct SaveGameState {
     selected_marketing_plan: MarketingPlan,
     campaign_status: CampaignStatus,
     listing_filter: usize,
+    #[serde(default)]
+    portfolio_index: usize,
     walkaway_price: i64,
     walkaway_style: WalkawayStyle,
     status: String,
@@ -48,6 +50,7 @@ impl SaveGameState {
             selected_marketing_plan: app.selected_marketing_plan,
             campaign_status: app.campaign_status,
             listing_filter: app.listing_filter,
+            portfolio_index: app.portfolio_index,
             walkaway_price: app.walkaway_price,
             walkaway_style: app.walkaway_style,
             status: app.status.clone(),
@@ -96,6 +99,9 @@ impl App {
         self.selected_marketing_plan = save.selected_marketing_plan;
         self.campaign_status = save.campaign_status;
         self.listing_filter = save.listing_filter;
+        self.portfolio_index = save
+            .portfolio_index
+            .min(self.player.properties.len().saturating_sub(1));
         self.walkaway_price = save.walkaway_price;
         self.walkaway_style = save.walkaway_style;
         self.status = save.status;

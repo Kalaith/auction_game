@@ -1,11 +1,16 @@
 use crate::model::{
-    CampaignStatus, MarketEvent, Player, CAMPAIGN_GOAL_NET_WORTH, CAMPAIGN_MAX_WEEKS,
+    CampaignStatus, MarketEvent, Player, CAMPAIGN_GOAL_NET_WORTH, CAMPAIGN_GOAL_PROPERTIES,
+    CAMPAIGN_GOAL_WEEKLY_RENT, CAMPAIGN_MAX_WEEKS,
 };
+use crate::sim::rental::{apply_rental_income, portfolio_rental_snapshot};
+use crate::sim::valuation::net_worth;
 
-const WEEKLY_DEBT_INTEREST_RATE: f32 = 0.0015;
+const WEEKLY_DEBT_INTEREST_RATE: f32 = 0.00095;
 
 #[derive(Clone, Debug)]
 pub struct WeeklyPressure {
+    pub rental_income: i64,
+    pub rental_operating_cost: i64,
     pub debt_interest: i64,
     pub holding_cost: i64,
     pub total: i64,
@@ -13,14 +18,19 @@ pub struct WeeklyPressure {
 }
 
 pub fn apply_weekly_pressure(player: &mut Player, market: &MarketEvent) -> WeeklyPressure {
+    let rental = apply_rental_income(player);
     let debt_interest = weekly_debt_interest(player.debt, market);
     let holding_cost = weekly_holding_cost(player);
     let total = debt_interest + holding_cost;
-    let shortfall_added_to_debt = if player.cash >= total {
-        player.cash -= total;
+    let net_cost = total - rental.net_income;
+    let shortfall_added_to_debt = if net_cost <= 0 {
+        player.cash += -net_cost;
+        0
+    } else if player.cash >= net_cost {
+        player.cash -= net_cost;
         0
     } else {
-        let shortfall = total - player.cash;
+        let shortfall = net_cost - player.cash;
         player.cash = 0;
         player.debt += shortfall;
         shortfall
@@ -31,6 +41,8 @@ pub fn apply_weekly_pressure(player: &mut Player, market: &MarketEvent) -> Weekl
     }
 
     WeeklyPressure {
+        rental_income: rental.gross_rent,
+        rental_operating_cost: rental.operating_cost,
         debt_interest,
         holding_cost,
         total,
@@ -55,14 +67,26 @@ pub fn weekly_holding_cost(player: &Player) -> i64 {
         .sum()
 }
 
-pub fn campaign_status(week: u32, net_worth: i64) -> CampaignStatus {
-    if net_worth >= CAMPAIGN_GOAL_NET_WORTH {
+pub fn campaign_status(player: &Player, market: &MarketEvent, week: u32) -> CampaignStatus {
+    let rent = portfolio_rental_snapshot(player).gross_rent;
+    if player.properties.len() >= CAMPAIGN_GOAL_PROPERTIES
+        && rent >= CAMPAIGN_GOAL_WEEKLY_RENT
+        && net_worth(player, market) >= CAMPAIGN_GOAL_NET_WORTH
+    {
         CampaignStatus::Won
     } else if week > CAMPAIGN_MAX_WEEKS {
         CampaignStatus::Failed
     } else {
         CampaignStatus::Active
     }
+}
+
+pub fn campaign_progress(player: &Player, market: &MarketEvent) -> (usize, i64, i64) {
+    (
+        player.properties.len(),
+        portfolio_rental_snapshot(player).gross_rent,
+        net_worth(player, market),
+    )
 }
 
 pub fn suburb_is_unlocked(suburb: &str, week: u32, net_worth: i64, reputation: i32) -> bool {

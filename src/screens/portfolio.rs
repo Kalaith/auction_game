@@ -2,10 +2,11 @@ use crate::app::App;
 use crate::model::PropertyId;
 use crate::screens::portfolio_widgets::{
     draw_active_project_decision, draw_contractor_selector, draw_empty_portfolio,
-    draw_hold_decision, draw_marketing_selector, draw_problem_card, draw_sell_decision,
-    draw_upgrade_decision, recommended_upgrade,
+    draw_hold_decision, draw_lease_decision, draw_marketing_selector, draw_problem_card,
+    draw_sell_decision, draw_upgrade_decision, recommended_upgrade,
 };
 use crate::sim::finance::borrowing_limit;
+use crate::sim::rental::{leasing_cost, portfolio_rental_snapshot, weekly_rent_for};
 use crate::sim::valuation::current_value;
 use crate::ui::*;
 use macroquad::prelude::*;
@@ -18,7 +19,81 @@ impl App {
             return;
         }
 
-        let owned = self.player.properties[0].clone();
+        self.portfolio_index = self
+            .portfolio_index
+            .min(self.player.properties.len().saturating_sub(1));
+        let rental = portfolio_rental_snapshot(&self.player);
+        label(
+            &format!(
+                "{} homes | {} leased | {} gross rent each week",
+                self.player.properties.len(),
+                self.player
+                    .properties
+                    .iter()
+                    .filter(|owned| owned.is_leased)
+                    .count(),
+                format_money(rental.gross_rent)
+            ),
+            212.0,
+            106.0,
+            17,
+            if rental.gross_rent > 0 {
+                POSITIVE
+            } else {
+                TEXT_DIM
+            },
+        );
+
+        let count = self.player.properties.len().min(6);
+        let selector_gap = 10.0;
+        let selector_w =
+            (ui_width() - 56.0 - selector_gap * (count.saturating_sub(1)) as f32) / count as f32;
+        let mut selected = None;
+        for (index, property) in self.player.properties.iter().take(6).enumerate() {
+            let rect = Rect::new(
+                28.0 + index as f32 * (selector_w + selector_gap),
+                124.0,
+                selector_w,
+                68.0,
+            );
+            if index == self.portfolio_index {
+                highlight_panel(rect);
+            } else {
+                soft_panel(rect);
+            }
+            label_fit(
+                &property.property.address,
+                rect.x + 10.0,
+                rect.y + 25.0,
+                rect.w - 20.0,
+                16,
+                TEXT_BRIGHT,
+            );
+            let lease_label = if property.is_leased {
+                format!("Leased {} / wk", format_money(property.weekly_rent))
+            } else {
+                "Vacant".to_string()
+            };
+            label(
+                &lease_label,
+                rect.x + 10.0,
+                rect.y + 50.0,
+                14,
+                if property.is_leased {
+                    POSITIVE
+                } else {
+                    WARNING
+                },
+            );
+            if rect_clicked(rect) {
+                selected = Some(index);
+            }
+        }
+        if let Some(index) = selected {
+            self.portfolio_index = index;
+        }
+
+        let owned = self.player.properties[self.portfolio_index].clone();
         let estimate = current_value(&owned, self.market());
         let position = estimate
             - owned.purchase_price
@@ -27,7 +102,7 @@ impl App {
             - owned.holding_spend();
         let bank_room = borrowing_limit(&self.player, self.market()) - self.player.debt;
         let has_active_project = owned.active_renovation.is_some();
-        let main = Rect::new(28.0, 142.0, ui_width() - 56.0, ui_height() - 184.0);
+        let main = Rect::new(28.0, 208.0, ui_width() - 56.0, ui_height() - 250.0);
         soft_panel(main);
 
         draw_house_art(
@@ -54,7 +129,12 @@ impl App {
             TEXT_DIM,
         );
         label(
-            &format!("Deposit paid {}", format_money(owned.deposit_paid)),
+            &format!(
+                "Deposit {} | Rent earned {} | Rental profit {}",
+                format_money(owned.deposit_paid),
+                format_money(owned.rent_received),
+                format_money(owned.rental_profit())
+            ),
             main.x + 372.0,
             main.y + 92.0,
             15,
@@ -94,6 +174,7 @@ impl App {
         let card_w = (main.w - 54.0) / 3.0;
         let mut upgrade_action: Option<(PropertyId, String)> = None;
         let mut hold_week = false;
+        let mut lease = false;
 
         if has_active_project {
             draw_active_project_decision(Rect::new(main.x + 18.0, card_y, card_w, 160.0), &owned);
@@ -109,12 +190,22 @@ impl App {
             }
         }
 
-        if draw_hold_decision(
-            Rect::new(main.x + 36.0 + card_w, card_y, card_w, 160.0),
-            &owned,
-            self.campaign_status.is_finished(),
-        ) {
-            hold_week = true;
+        let hold_rect = Rect::new(main.x + 36.0 + card_w, card_y, card_w, 160.0);
+        if owned.is_leased {
+            if draw_hold_decision(hold_rect, &owned, self.campaign_status.is_finished()) {
+                hold_week = true;
+            }
+        } else {
+            let asking_rent = weekly_rent_for(&owned.property, self.market());
+            if draw_lease_decision(
+                hold_rect,
+                asking_rent,
+                leasing_cost(asking_rent),
+                self.player.cash,
+                has_active_project,
+            ) {
+                lease = true;
+            }
         }
 
         let sale_action = draw_sell_decision(
@@ -131,7 +222,9 @@ impl App {
         if let Some((property_id, upgrade_id)) = upgrade_action {
             self.buy_upgrade(property_id, &upgrade_id);
         }
-        if let Some(choice) = sale_action {
+        if lease {
+            self.lease_property(owned.property.id);
+        } else if let Some(choice) = sale_action {
             self.sell_property(owned.property.id, choice);
         } else if hold_week {
             self.advance_week();

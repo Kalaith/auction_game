@@ -1,9 +1,11 @@
 use crate::model::{MarketEvent, Player};
+use crate::sim::rental::portfolio_rental_snapshot;
 use crate::sim::valuation::{cash_needed_to_settle, deposit, net_worth, round_down_to_increment};
 
 const STARTER_BORROWING_LIMIT: i64 = 620_000;
 const REPUTATION_BONUS: i64 = 35_000;
 const NET_WORTH_LEVERAGE: f32 = 0.85;
+const RENTAL_INCOME_LEVERAGE: i64 = 180;
 const BID_INCREMENT: i64 = 10_000;
 const MAX_TEST_PRICE: i64 = 2_500_000;
 
@@ -35,7 +37,8 @@ pub struct FinanceSnapshot {
 pub fn borrowing_limit(player: &Player, market: &MarketEvent) -> i64 {
     let base = STARTER_BORROWING_LIMIT
         + i64::from(player.reputation.max(0)) * REPUTATION_BONUS
-        + (net_worth(player, market).max(0) as f32 * NET_WORTH_LEVERAGE) as i64;
+        + (net_worth(player, market).max(0) as f32 * NET_WORTH_LEVERAGE) as i64
+        + portfolio_rental_snapshot(player).gross_rent * RENTAL_INCOME_LEVERAGE;
     round_down_to_increment(
         (base as f32 * (1.0 + market.buyer_budget_modifier)).max(0.0) as i64,
         BID_INCREMENT,

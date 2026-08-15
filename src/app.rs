@@ -12,6 +12,7 @@ use crate::sim::finance::finance_snapshot;
 use crate::sim::renovation::{
     progress_player_renovations, quote_renovation, start_upgrade_project,
 };
+use crate::sim::rental::{leasing_cost, weekly_rent_for};
 use crate::sim::research::{recommended_walkaway, research_cost};
 use crate::sim::sale_sim::{simulate_sale, MarketingPlan, ReserveChoice, SaleResult};
 use crate::sim::valuation::{
@@ -56,6 +57,7 @@ pub struct App {
     pub(crate) selected_marketing_plan: MarketingPlan,
     pub(crate) campaign_status: CampaignStatus,
     pub(crate) listing_filter: usize,
+    pub(crate) portfolio_index: usize,
     pub(crate) walkaway_price: i64,
     pub(crate) walkaway_style: WalkawayStyle,
     pub(crate) status: String,
@@ -84,6 +86,7 @@ impl App {
             selected_marketing_plan: MarketingPlan::Standard,
             campaign_status: CampaignStatus::Active,
             listing_filter: 0,
+            portfolio_index: 0,
             walkaway_price: 600_000,
             walkaway_style: WalkawayStyle::Balanced,
             status: "Read the market, pick a property, and keep your margin alive.".to_string(),
@@ -255,6 +258,7 @@ impl App {
         self.selected_marketing_plan = MarketingPlan::Standard;
         self.campaign_status = CampaignStatus::Active;
         self.listing_filter = 0;
+        self.portfolio_index = 0;
         self.walkaway_price = 600_000;
         self.walkaway_style = WalkawayStyle::Balanced;
         self.status = "Read the market, pick a property, and keep your margin alive.".to_string();
@@ -376,6 +380,7 @@ impl App {
         );
         self.purchase_debrief = Some(debrief);
         self.player.properties.push(owned);
+        self.portfolio_index = self.player.properties.len() - 1;
         self.available_properties
             .retain(|property| property.id != auction.property.id);
         self.current_auction = None;
@@ -407,6 +412,10 @@ impl App {
         }
         if self.player.properties[index].active_renovation.is_some() {
             self.status = "Finish the current renovation before starting another.".to_string();
+            return;
+        }
+        if self.player.properties[index].is_leased {
+            self.status = "A tenanted home cannot begin renovation work.".to_string();
             return;
         }
 
@@ -466,6 +475,9 @@ impl App {
             self.player.debt -= owned.debt;
             self.player.reputation += result.reputation_delta;
             self.player.properties.remove(index);
+            self.portfolio_index = self
+                .portfolio_index
+                .min(self.player.properties.len().saturating_sub(1));
             self.status = format!(
                 "{} sale complete with {} {}. {}",
                 choice.label(),
@@ -482,7 +494,7 @@ impl App {
 
         self.sale_result = Some(result);
         let current_net_worth = net_worth(&self.player, self.market());
-        self.campaign_status = campaign_status(self.week, current_net_worth);
+        self.campaign_status = campaign_status(&self.player, self.market(), self.week);
         if self.campaign_status == CampaignStatus::Won {
             self.status = format!(
                 "Campaign won with {} net worth. Review the sale result.",
@@ -490,6 +502,38 @@ impl App {
             );
         }
         self.screen = Screen::SaleResult;
+    }
+
+    pub(crate) fn lease_property(&mut self, property_id: PropertyId) {
+        let Some(index) = self
+            .player
+            .properties
+            .iter()
+            .position(|owned| owned.property.id == property_id)
+        else {
+            return;
+        };
+        if self.player.properties[index].is_leased {
+            return;
+        }
+        if self.player.properties[index].active_renovation.is_some() {
+            self.status = "Finish the renovation before placing a tenant.".to_string();
+            return;
+        }
+        let rent = weekly_rent_for(&self.player.properties[index].property, self.market());
+        let fee = leasing_cost(rent);
+        if self.player.cash < fee {
+            self.status = format!("Need {} for advertising and leasing.", format_money(fee));
+            return;
+        }
+        self.player.cash -= fee;
+        self.player.properties[index].is_leased = true;
+        self.player.properties[index].weekly_rent = rent;
+        self.status = format!(
+            "Tenant placed at {} per week. Leasing cost {}.",
+            format_money(rent),
+            format_money(fee)
+        );
     }
 
     pub(crate) fn purchase_debrief_for_auction(
@@ -559,7 +603,7 @@ impl App {
         self.week += 1;
         self.market_index = ((self.week - 1) as usize) % self.data.market_events.len();
         let current_net_worth = net_worth(&self.player, self.market());
-        self.campaign_status = campaign_status(self.week, current_net_worth);
+        self.campaign_status = campaign_status(&self.player, self.market(), self.week);
         self.refresh_available_properties();
         self.status = match self.campaign_status {
             CampaignStatus::Won => format!(
@@ -574,10 +618,12 @@ impl App {
             CampaignStatus::Active => {
                 let pressure_note = if pressure.total > 0 {
                     format!(
-                        "Paid {} carrying costs ({} holding, {} interest).",
+                        "Rent {}. Costs {} ({} property, {} interest, {} management).",
+                        format_money(pressure.rental_income),
                         format_money(pressure.total),
                         format_money(pressure.holding_cost),
-                        format_money(pressure.debt_interest)
+                        format_money(pressure.debt_interest),
+                        format_money(pressure.rental_operating_cost)
                     )
                 } else {
                     "No carrying costs this week.".to_string()
