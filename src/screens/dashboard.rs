@@ -4,7 +4,9 @@ use crate::model::{
     CAMPAIGN_GOAL_WEEKLY_RENT,
 };
 use crate::screens::Screen;
-use crate::sim::campaign::{assess_campaign, campaign_progress, next_unlock_note};
+use crate::sim::campaign::{
+    assess_campaign, campaign_progress, next_unlock_note, portfolio_weekly_cashflow,
+};
 use crate::sim::finance::max_financeable_bid;
 use crate::sim::valuation::{estimated_value_range, net_worth};
 use crate::ui::*;
@@ -92,6 +94,7 @@ impl App {
     fn draw_campaign_conclusion(&mut self, net_worth_value: i64) {
         let won = self.campaign_status == CampaignStatus::Won;
         let rental = crate::sim::rental::portfolio_rental_snapshot(&self.player);
+        let weekly_cashflow = portfolio_weekly_cashflow(&self.player, self.market());
         let assessment = assess_campaign(&self.player, self.market());
         let title = if won {
             "Portfolio Established"
@@ -136,7 +139,7 @@ impl App {
                 "Weekly Rent",
                 format_money(rental.gross_rent),
                 if won || assessment.rent_short == 0 {
-                    "Goal secured".to_string()
+                    format!("Goal secured | Net {} / wk", signed_money(weekly_cashflow))
                 } else {
                     format!("Short {} / week", format_money(assessment.rent_short))
                 },
@@ -207,9 +210,19 @@ impl App {
         );
 
         let advice = Rect::new(80.0, 492.0, ui_width() - 160.0, 72.0);
+        let advice_copy = if won && weekly_cashflow < 0 {
+            format!(
+                "The brief is secured, but operations still lose {} each week. Pay down the worst loan, lift supported rent, or recycle a weak asset.",
+                format_money(weekly_cashflow.abs())
+            )
+        } else {
+            assessment.priority_advice().to_string()
+        };
         soft_panel(advice);
         label(
-            if won {
+            if won && weekly_cashflow < 0 {
+                "NEXT CYCLE"
+            } else if won {
                 "WHAT WORKED"
             } else {
                 "BINDING CONSTRAINT"
@@ -220,7 +233,7 @@ impl App {
             color,
         );
         draw_wrapped_text(
-            assessment.priority_advice(),
+            &advice_copy,
             advice.x + 190.0,
             advice.y + 22.0,
             advice.w - 208.0,

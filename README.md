@@ -37,6 +37,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - Diagnose every owned home's true weekly result after its rent, management, loan interest, property costs, and maintenance impact.
 - Handle scheduled eight-week rent reviews: renew safely, or ask for the current market rent and risk a vacancy in a weak tenant market.
 - Carry completed reviews and review-created vacancies into the persistent season ledger and final portfolio debrief.
+- Keep the original gross-rent campaign target, while the final ledger separately names true net weekly cashflow and warns when a winning portfolio still needs deleveraging.
 - Preserve a safe cash buffer that grows by $8,000 per portfolio door; auction guidance warns when the next bid leaves too little resilience.
 
 ## Goal

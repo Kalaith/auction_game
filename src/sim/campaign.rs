@@ -111,6 +111,14 @@ pub fn weekly_holding_cost(player: &Player) -> i64 {
         .sum()
 }
 
+pub fn portfolio_weekly_cashflow(player: &Player, market: &MarketEvent) -> i64 {
+    let rental = portfolio_rental_snapshot(player);
+    rental.gross_rent
+        - rental.operating_cost
+        - weekly_debt_interest(player.debt, market)
+        - weekly_holding_cost(player)
+}
+
 pub fn campaign_status(player: &Player, market: &MarketEvent, week: u32) -> CampaignStatus {
     let rent = portfolio_rental_snapshot(player).gross_rent;
     if player.properties.len() >= CAMPAIGN_GOAL_PROPERTIES

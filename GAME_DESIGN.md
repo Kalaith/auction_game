@@ -56,6 +56,7 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - A clean, leased home held for four weeks can release equity up to 80% LVR and the bank limit; the cash funds growth while debt and interest rise.
 - Each property reports its current equity, loan-to-value ratio, and annual interest rate so refinance capacity is legible rather than magical.
 - Each holding also reports its own net weekly cashflow after effective rent, management, interest, property costs, and current maintenance losses.
+- Gross rent remains a campaign constraint, but the conclusion separately audits net weekly operations and gives a next-cycle deleveraging warning when a winning portfolio is still cashflow-negative.
 - The safe-cash target grows by $8,000 per door (with an $18,000 starter minimum), and both bidder terms and live guidance flag bids that breach it.
 - A sale outcome separates the hammer price from fees, loan repayment, settlement cash released, and true deal profit.
 - Every advanced week closes a visible statement for rent, management, interest, property costs, net cashflow, and debt-funded shortfall.

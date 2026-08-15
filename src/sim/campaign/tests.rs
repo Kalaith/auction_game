@@ -119,6 +119,22 @@ fn rent_offsets_interest_holding_and_management_before_cash_moves() {
 }
 
 #[test]
+fn portfolio_cashflow_matches_the_weekly_pressure_ledger() {
+    let steady = market(0.0);
+    let mut player = Player::new();
+    let mut owned = owned_property(1);
+    owned.is_leased = true;
+    owned.weekly_rent = 550;
+    player.debt = owned.debt;
+    player.properties.push(owned);
+
+    let expected = portfolio_weekly_cashflow(&player, &steady);
+    let pressure = apply_weekly_pressure(&mut player, &steady);
+
+    assert_eq!(expected, pressure.rental_income - pressure.total);
+}
+
+#[test]
 fn a_disciplined_three_rental_path_can_complete_the_real_campaign() {
     let data = GameData::load();
     let market = &data.market_events[0];

@@ -8,9 +8,7 @@ use crate::screens::portfolio_widgets::{
     draw_problem_card, draw_rental_campaign, draw_sell_decision, draw_skip_renovation,
     draw_upgrade_decision, recommended_upgrade,
 };
-use crate::sim::campaign::{
-    annual_interest_rate_percent, weekly_debt_interest, weekly_holding_cost,
-};
+use crate::sim::campaign::{annual_interest_rate_percent, portfolio_weekly_cashflow};
 use crate::sim::finance::{borrowing_limit, property_cashflow, refinance_capacity};
 use crate::sim::rental::{
     leasing_cost, portfolio_rental_snapshot, proposed_review_rent, rent_review_due,
@@ -33,10 +31,7 @@ impl App {
             .min(self.player.properties.len().saturating_sub(1));
         let rental = portfolio_rental_snapshot(&self.player);
         let portfolio_has_due_review = self.player.properties.iter().any(rent_review_due);
-        let portfolio_cashflow = rental.gross_rent
-            - rental.operating_cost
-            - weekly_debt_interest(self.player.debt, self.market())
-            - weekly_holding_cost(&self.player);
+        let portfolio_cashflow = portfolio_weekly_cashflow(&self.player, self.market());
         label(
             &format!(
                 "{} homes | {} leased | {} gross rent | {} weekly cashflow",
