@@ -196,6 +196,11 @@ fn safe_review_renews_while_an_ambitious_low_demand_ask_can_create_vacancy() {
     ambitious.weekly_rent = 600;
 
     assert_eq!(
+        rent_review_outlook(&ambitious, &market()),
+        RentReviewOutlook::VacancyRisk
+    );
+
+    assert_eq!(
         resolve_rent_review(&mut safe, &market(), false),
         Some(RentReviewOutcome::Renewed(530))
     );

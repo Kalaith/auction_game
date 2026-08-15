@@ -1,4 +1,5 @@
 use crate::model::OwnedProperty;
+use crate::sim::rental::RentReviewOutlook;
 use crate::ui::*;
 use macroquad::prelude::*;
 
@@ -12,6 +13,7 @@ pub(super) fn draw_rent_review_decision(
     rect: Rect,
     owned: &OwnedProperty,
     proposed_rent: i64,
+    outlook: RentReviewOutlook,
 ) -> Option<RentReviewChoice> {
     highlight_panel(rect);
     label("Rent Review Due", rect.x + 16.0, rect.y + 30.0, 21, WARNING);
@@ -22,6 +24,18 @@ pub(super) fn draw_rent_review_decision(
         rect.w - 32.0,
         15,
         TEXT_DIM,
+    );
+    label_fit(
+        outlook.label(),
+        rect.x + 16.0,
+        rect.y + 108.0,
+        rect.w - 32.0,
+        15,
+        if outlook == RentReviewOutlook::VacancyRisk {
+            NEGATIVE
+        } else {
+            POSITIVE
+        },
     );
     if button(
         Rect::new(rect.x + 16.0, rect.y + rect.h - 46.0, 142.0, 34.0),

@@ -14,7 +14,7 @@ use crate::sim::campaign::{
 use crate::sim::finance::{borrowing_limit, property_cashflow, refinance_capacity};
 use crate::sim::rental::{
     leasing_cost, portfolio_rental_snapshot, proposed_review_rent, rent_review_due,
-    weekly_rent_for_owned,
+    rent_review_outlook, weekly_rent_for_owned,
 };
 use crate::sim::valuation::current_value;
 use crate::ui::*;
@@ -244,6 +244,7 @@ impl App {
                 Rect::new(main.x + 18.0, card_y, card_w, 160.0),
                 &owned,
                 proposed_review_rent(&owned, self.market()),
+                rent_review_outlook(&owned, self.market()),
             );
         } else if has_active_project {
             draw_active_project_decision(Rect::new(main.x + 18.0, card_y, card_w, 160.0), &owned);

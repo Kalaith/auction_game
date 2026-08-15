@@ -95,6 +95,23 @@ pub enum RentReviewOutcome {
     Vacated(i64),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RentReviewOutlook {
+    AppraisalSupported,
+    DemandSupported,
+    VacancyRisk,
+}
+
+impl RentReviewOutlook {
+    pub fn label(self) -> &'static str {
+        match self {
+            RentReviewOutlook::AppraisalSupported => "At appraisal · low vacancy risk",
+            RentReviewOutlook::DemandSupported => "Strong demand · likely to hold",
+            RentReviewOutlook::VacancyRisk => "Above appraisal · vacancy risk",
+        }
+    }
+}
+
 pub fn rent_review_due(owned: &OwnedProperty) -> bool {
     owned.is_leased
         && owned.next_rent_review_week > 0
@@ -103,6 +120,20 @@ pub fn rent_review_due(owned: &OwnedProperty) -> bool {
 
 pub fn proposed_review_rent(owned: &OwnedProperty, market: &MarketEvent) -> i64 {
     weekly_rent_for_owned(owned, market).max(owned.weekly_rent + 20)
+}
+
+pub fn rent_review_outlook(owned: &OwnedProperty, market: &MarketEvent) -> RentReviewOutlook {
+    let proposed = proposed_review_rent(owned, market);
+    let market_rent = weekly_rent_for_owned(owned, market);
+    let demand_score = owned.property.buyer_demand
+        + (market.suburb_modifier(&owned.property.suburb) * 100.0) as i32;
+    if proposed <= market_rent {
+        RentReviewOutlook::AppraisalSupported
+    } else if demand_score >= 65 {
+        RentReviewOutlook::DemandSupported
+    } else {
+        RentReviewOutlook::VacancyRisk
+    }
 }
 
 pub fn resolve_rent_review(
@@ -119,10 +150,7 @@ pub fn resolve_rent_review(
     }
 
     let proposed = proposed_review_rent(owned, market);
-    let market_rent = weekly_rent_for_owned(owned, market);
-    let demand_score = owned.property.buyer_demand
-        + (market.suburb_modifier(&owned.property.suburb) * 100.0) as i32;
-    if proposed <= market_rent || demand_score >= 65 {
+    if rent_review_outlook(owned, market) != RentReviewOutlook::VacancyRisk {
         owned.weekly_rent = proposed;
         owned.next_rent_review_week = owned.weeks_held + RENT_REVIEW_TERM_WEEKS;
         Some(RentReviewOutcome::Raised(proposed))
