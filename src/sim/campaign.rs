@@ -91,8 +91,16 @@ pub fn weekly_debt_interest(debt: i64, market: &MarketEvent) -> i64 {
         return 0;
     }
 
-    let rate = (WEEKLY_DEBT_INTEREST_RATE - market.buyer_budget_modifier * 0.012).max(0.0005);
+    let rate = weekly_interest_rate(market);
     round_up_to_100(debt as f32 * rate)
+}
+
+pub fn annual_interest_rate_percent(market: &MarketEvent) -> f32 {
+    weekly_interest_rate(market) * 52.0 * 100.0
+}
+
+fn weekly_interest_rate(market: &MarketEvent) -> f32 {
+    (WEEKLY_DEBT_INTEREST_RATE - market.buyer_budget_modifier * 0.012).max(0.0005)
 }
 
 pub fn weekly_holding_cost(player: &Player) -> i64 {

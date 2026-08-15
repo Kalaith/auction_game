@@ -13,9 +13,17 @@ pub(super) fn draw_loan_control(
     owned: &OwnedProperty,
     cash: i64,
     refinance_capacity: i64,
+    lvr_percent: f32,
 ) -> Option<LoanAction> {
     dark_panel(rect);
-    label("PROPERTY LOAN", rect.x + 14.0, rect.y + 22.0, 13, TEXT_DIM);
+    label_fit(
+        &format!("LOAN · {lvr_percent:.0}% LVR"),
+        rect.x + 14.0,
+        rect.y + 22.0,
+        rect.w - 174.0,
+        13,
+        TEXT_DIM,
+    );
     label(
         &format_money(owned.debt),
         rect.x + 14.0,

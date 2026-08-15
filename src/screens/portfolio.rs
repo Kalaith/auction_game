@@ -7,7 +7,9 @@ use crate::screens::portfolio_widgets::{
     draw_problem_card, draw_rental_campaign, draw_sell_decision, draw_skip_renovation,
     draw_upgrade_decision, recommended_upgrade,
 };
-use crate::sim::campaign::{weekly_debt_interest, weekly_holding_cost};
+use crate::sim::campaign::{
+    annual_interest_rate_percent, weekly_debt_interest, weekly_holding_cost,
+};
 use crate::sim::finance::{borrowing_limit, refinance_capacity};
 use crate::sim::rental::{leasing_cost, portfolio_rental_snapshot, weekly_rent_for_owned};
 use crate::sim::valuation::current_value;
@@ -141,15 +143,17 @@ impl App {
             30,
             TEXT_BRIGHT,
         );
-        label(
+        label_fit(
             &format!(
-                "Bought for {} | Held {} weeks | {}",
+                "Bought for {} | Held {} weeks | {} | Loan {:.1}% p.a.",
                 format_money(owned.purchase_price),
                 owned.weeks_held,
-                owned.property.condition.label()
+                owned.property.condition.label(),
+                annual_interest_rate_percent(self.market())
             ),
             main.x + 372.0,
             main.y + 72.0,
+            main.w - 690.0,
             17,
             TEXT_DIM,
         );
@@ -170,7 +174,7 @@ impl App {
         draw_money_stat(
             "Current Estimate",
             &format_money(estimate),
-            "Market adjusted",
+            &format!("Equity {}", format_money(estimate - owned.debt)),
             Rect::new(main.x + 370.0, stat_y, 220.0, 78.0),
             if position >= 0 { POSITIVE } else { WARNING },
         );
@@ -192,6 +196,11 @@ impl App {
             &owned,
             self.player.cash,
             refinance_capacity(&self.player, owned.property.id, self.market()),
+            if estimate > 0 {
+                owned.debt as f32 / estimate as f32 * 100.0
+            } else {
+                0.0
+            },
         );
 
         let card_y = main.y + 272.0;

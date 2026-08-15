@@ -45,6 +45,7 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - Rent supports cashflow and borrowing capacity, but debt, ownership costs, and scheduled maintenance remain visible.
 - Spare cash can reduce a selected property's principal, trading liquidity for lower debt and more bank headroom.
 - A clean, leased home held for four weeks can release equity up to 80% LVR and the bank limit; the cash funds growth while debt and interest rise.
+- Each property reports its current equity, loan-to-value ratio, and annual interest rate so refinance capacity is legible rather than magical.
 - A sale outcome separates the hammer price from fees, loan repayment, settlement cash released, and true deal profit.
 - Every advanced week closes a visible statement for rent, management, interest, property costs, net cashflow, and debt-funded shortfall.
 - Maintenance checks occur on a disclosed schedule, reduce collected rent until repaired, and never arrive as uncontrolled random punishment.

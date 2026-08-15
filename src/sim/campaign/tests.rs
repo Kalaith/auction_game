@@ -25,6 +25,16 @@ fn debt_interest_rounds_up_to_hundreds() {
 }
 
 #[test]
+fn annual_rate_explains_the_same_market_pressure_as_weekly_interest() {
+    let steady = market(0.0);
+    let tighter = market(-0.04);
+
+    assert!((annual_interest_rate_percent(&steady) - 4.94).abs() < 0.01);
+    assert!(annual_interest_rate_percent(&tighter) > annual_interest_rate_percent(&steady));
+    assert!(weekly_debt_interest(400_000, &tighter) > weekly_debt_interest(400_000, &steady));
+}
+
+#[test]
 fn campaign_ends_after_goal_or_deadline() {
     let steady = market(0.0);
     let mut player = Player::new();
