@@ -152,6 +152,62 @@ fn advertising_takes_a_week_before_rent_can_be_collected() {
 }
 
 #[test]
+fn a_completed_tenancy_schedules_a_visible_rent_review() {
+    let mut owned = OwnedProperty::new(
+        property(),
+        470_000,
+        18_000,
+        47_000,
+        423_000,
+        480_000,
+        crate::model::ResearchLevel::StreetScan,
+        crate::model::WalkawayStyle::Balanced,
+    );
+    owned.weeks_held = 3;
+    start_leasing_campaign(&mut owned, 530);
+    let mut player = Player::new();
+    player.properties.push(owned);
+
+    progress_leasing_campaigns(&mut player);
+
+    assert_eq!(player.properties[0].next_rent_review_week, 11);
+    player.properties[0].weeks_held = 11;
+    assert!(rent_review_due(&player.properties[0]));
+}
+
+#[test]
+fn safe_review_renews_while_an_ambitious_low_demand_ask_can_create_vacancy() {
+    let mut safe = OwnedProperty::new(
+        property(),
+        470_000,
+        18_000,
+        47_000,
+        423_000,
+        480_000,
+        crate::model::ResearchLevel::StreetScan,
+        crate::model::WalkawayStyle::Balanced,
+    );
+    safe.is_leased = true;
+    safe.weekly_rent = 530;
+    safe.weeks_held = 10;
+    safe.next_rent_review_week = 10;
+    let mut ambitious = safe.clone();
+    ambitious.property.buyer_demand = 40;
+    ambitious.weekly_rent = 600;
+
+    assert_eq!(
+        resolve_rent_review(&mut safe, &market(), false),
+        Some(RentReviewOutcome::Renewed(530))
+    );
+    assert!(!rent_review_due(&safe));
+    assert_eq!(
+        resolve_rent_review(&mut ambitious, &market(), true),
+        Some(RentReviewOutcome::Vacated(620))
+    );
+    assert!(!ambitious.is_leased);
+}
+
+#[test]
 fn a_home_already_on_the_rental_market_cannot_be_listed_twice() {
     let mut owned = OwnedProperty::new(
         property(),

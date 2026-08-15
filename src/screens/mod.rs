@@ -7,6 +7,7 @@ pub mod dashboard;
 pub mod esc_menu;
 pub mod portfolio;
 mod portfolio_finance_widgets;
+mod portfolio_rent_review;
 pub mod portfolio_widgets;
 pub mod property_detail;
 pub mod property_list;

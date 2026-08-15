@@ -190,6 +190,17 @@ impl App {
                 self.status = "The letting fee is paid. Tap HOLD to close the vacant leasing week."
                     .to_string();
             }
+            "portfolio_review" => {
+                self.start_new_game();
+                self.seed_portfolio_capture();
+                if let Some(owned) = self.player.properties.first_mut() {
+                    owned.weeks_held = 9;
+                    owned.next_rent_review_week = 9;
+                }
+                self.screen = Screen::Portfolio;
+                self.status = "Rent review due. Renew safely or test the market and risk vacancy."
+                    .to_string();
+            }
             "sale_result" => {
                 self.start_new_game();
                 self.seed_portfolio_capture();

@@ -1,6 +1,8 @@
 use crate::model::{Condition, DealArchetype, MarketEvent, OwnedProperty, Player, Property};
 use crate::sim::maintenance::effective_weekly_rent;
 
+const RENT_REVIEW_TERM_WEEKS: u32 = 8;
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct RentalSnapshot {
     pub gross_rent: i64,
@@ -63,6 +65,7 @@ pub fn progress_leasing_campaigns(player: &mut Player) -> Vec<String> {
         owned.leasing_weeks_remaining -= 1;
         if owned.leasing_weeks_remaining == 0 {
             owned.is_leased = true;
+            owned.next_rent_review_week = owned.weeks_held + RENT_REVIEW_TERM_WEEKS;
             notices.push(format!(
                 "{} leased at {} per week.",
                 owned.property.address,
@@ -81,7 +84,54 @@ pub fn end_tenancy(owned: &mut OwnedProperty) -> i64 {
     owned.is_leased = false;
     owned.weekly_rent = 0;
     owned.leasing_weeks_remaining = 0;
+    owned.next_rent_review_week = 0;
     turnover_cost
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RentReviewOutcome {
+    Renewed(i64),
+    Raised(i64),
+    Vacated(i64),
+}
+
+pub fn rent_review_due(owned: &OwnedProperty) -> bool {
+    owned.is_leased
+        && owned.next_rent_review_week > 0
+        && owned.weeks_held >= owned.next_rent_review_week
+}
+
+pub fn proposed_review_rent(owned: &OwnedProperty, market: &MarketEvent) -> i64 {
+    weekly_rent_for_owned(owned, market).max(owned.weekly_rent + 20)
+}
+
+pub fn resolve_rent_review(
+    owned: &mut OwnedProperty,
+    market: &MarketEvent,
+    test_market: bool,
+) -> Option<RentReviewOutcome> {
+    if !rent_review_due(owned) {
+        return None;
+    }
+    if !test_market {
+        owned.next_rent_review_week = owned.weeks_held + RENT_REVIEW_TERM_WEEKS;
+        return Some(RentReviewOutcome::Renewed(owned.weekly_rent));
+    }
+
+    let proposed = proposed_review_rent(owned, market);
+    let market_rent = weekly_rent_for_owned(owned, market);
+    let demand_score = owned.property.buyer_demand
+        + (market.suburb_modifier(&owned.property.suburb) * 100.0) as i32;
+    if proposed <= market_rent || demand_score >= 65 {
+        owned.weekly_rent = proposed;
+        owned.next_rent_review_week = owned.weeks_held + RENT_REVIEW_TERM_WEEKS;
+        Some(RentReviewOutcome::Raised(proposed))
+    } else {
+        owned.is_leased = false;
+        owned.weekly_rent = 0;
+        owned.next_rent_review_week = 0;
+        Some(RentReviewOutcome::Vacated(proposed))
+    }
 }
 
 pub fn portfolio_rental_snapshot(player: &Player) -> RentalSnapshot {

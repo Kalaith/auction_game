@@ -1,6 +1,7 @@
 use crate::app::App;
 use crate::model::PropertyId;
 use crate::screens::portfolio_finance_widgets::{draw_loan_control, LoanAction};
+use crate::screens::portfolio_rent_review::{draw_rent_review_decision, RentReviewChoice};
 use crate::screens::portfolio_widgets::{
     draw_active_project_decision, draw_contractor_selector, draw_empty_portfolio,
     draw_hold_decision, draw_lease_decision, draw_maintenance_decision, draw_marketing_selector,
@@ -11,7 +12,10 @@ use crate::sim::campaign::{
     annual_interest_rate_percent, weekly_debt_interest, weekly_holding_cost,
 };
 use crate::sim::finance::{borrowing_limit, property_cashflow, refinance_capacity};
-use crate::sim::rental::{leasing_cost, portfolio_rental_snapshot, weekly_rent_for_owned};
+use crate::sim::rental::{
+    leasing_cost, portfolio_rental_snapshot, proposed_review_rent, rent_review_due,
+    weekly_rent_for_owned,
+};
 use crate::sim::valuation::current_value;
 use crate::ui::*;
 use macroquad::prelude::*;
@@ -85,6 +89,11 @@ impl App {
                     "On rental market | {} / wk",
                     format_money(property.weekly_rent)
                 )
+            } else if rent_review_due(property) {
+                format!(
+                    "Rent review due | {} / wk",
+                    format_money(property.weekly_rent)
+                )
             } else if property.is_leased {
                 if let Some(issue) = &property.maintenance_issue {
                     format!(
@@ -109,6 +118,8 @@ impl App {
                 14,
                 if property.maintenance_issue.is_some() {
                     NEGATIVE
+                } else if rent_review_due(property) {
+                    WARNING
                 } else if property.is_leased && property_week.net_cashflow >= 0 {
                     POSITIVE
                 } else if property.is_leased {
@@ -217,6 +228,7 @@ impl App {
         let mut lease = false;
         let mut end_tenancy_action = false;
         let mut repair_maintenance_action = false;
+        let mut rent_review_action = None;
 
         if owned.maintenance_issue.is_some() {
             if draw_maintenance_decision(
@@ -226,6 +238,12 @@ impl App {
             ) {
                 repair_maintenance_action = true;
             }
+        } else if rent_review_due(&owned) {
+            rent_review_action = draw_rent_review_decision(
+                Rect::new(main.x + 18.0, card_y, card_w, 160.0),
+                &owned,
+                proposed_review_rent(&owned, self.market()),
+            );
         } else if has_active_project {
             draw_active_project_decision(Rect::new(main.x + 18.0, card_y, card_w, 160.0), &owned);
         } else if owned.leasing_weeks_remaining > 0 {
@@ -262,6 +280,7 @@ impl App {
                 hold_rect,
                 &owned,
                 property_cashflow(&owned, self.market()).net_cashflow,
+                rent_review_due(&owned),
                 self.campaign_status.is_finished(),
             ) {
                 hold_week = true;
@@ -300,6 +319,8 @@ impl App {
         }
         if repair_maintenance_action {
             self.repair_property_maintenance(owned.property.id);
+        } else if let Some(choice) = rent_review_action {
+            self.review_property_rent(owned.property.id, choice == RentReviewChoice::TestMarket);
         } else if end_tenancy_action {
             self.end_property_tenancy(owned.property.id);
         } else if lease {

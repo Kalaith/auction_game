@@ -3,7 +3,8 @@ use crate::model::PropertyId;
 use crate::sim::finance::{pay_down_principal, refinance_property};
 use crate::sim::maintenance::repair_maintenance;
 use crate::sim::rental::{
-    end_tenancy, leasing_cost, start_leasing_campaign, weekly_rent_for_owned,
+    end_tenancy, leasing_cost, resolve_rent_review, start_leasing_campaign, weekly_rent_for_owned,
+    RentReviewOutcome,
 };
 use crate::ui::format_money;
 
@@ -95,6 +96,38 @@ impl App {
             self.player.properties[index].property.address,
             format_money(turnover_cost)
         );
+    }
+
+    pub(crate) fn review_property_rent(&mut self, property_id: PropertyId, test_market: bool) {
+        let market = self.market().clone();
+        let Some(owned) = self
+            .player
+            .properties
+            .iter_mut()
+            .find(|owned| owned.property.id == property_id)
+        else {
+            return;
+        };
+        let address = owned.property.address.clone();
+        self.status = match resolve_rent_review(owned, &market, test_market) {
+            Some(RentReviewOutcome::Renewed(rent)) => format!(
+                "{} renewed at {} per week for another eight weeks.",
+                address,
+                format_money(rent)
+            ),
+            Some(RentReviewOutcome::Raised(rent)) => format!(
+                "The tenant accepted {} per week at {}. The higher rent is now contracted.",
+                format_money(rent),
+                address
+            ),
+            Some(RentReviewOutcome::Vacated(ask)) => format!(
+                "The tenant rejected {} per week at {} and left. Advertise again to restore rent.",
+                format_money(ask),
+                address
+            ),
+            None => return,
+        };
+        self.refresh_campaign_outcome();
     }
 
     pub(crate) fn repair_property_maintenance(&mut self, property_id: PropertyId) {

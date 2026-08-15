@@ -67,6 +67,8 @@ pub struct OwnedProperty {
     #[serde(default)]
     pub leasing_weeks_remaining: u8,
     #[serde(default)]
+    pub next_rent_review_week: u32,
+    #[serde(default)]
     pub rent_received: i64,
     #[serde(default)]
     pub operating_spend: i64,
@@ -105,6 +107,7 @@ impl OwnedProperty {
             is_leased: false,
             weekly_rent: 0,
             leasing_weeks_remaining: 0,
+            next_rent_review_week: 0,
             rent_received: 0,
             operating_spend: 0,
             maintenance_issue: None,
