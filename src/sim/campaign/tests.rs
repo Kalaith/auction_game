@@ -28,11 +28,11 @@ fn campaign_ends_after_goal_or_deadline() {
     let steady = market(0.0);
     let mut player = Player::new();
     assert_eq!(
-        campaign_status(&player, &steady, 41),
+        campaign_status(&player, &steady, 25),
         CampaignStatus::Failed
     );
     assert_eq!(
-        campaign_status(&player, &steady, 40),
+        campaign_status(&player, &steady, 24),
         CampaignStatus::Active
     );
 

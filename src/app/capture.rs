@@ -1,5 +1,5 @@
 use super::App;
-use crate::model::{OwnedProperty, Property, ResearchLevel, WalkawayStyle};
+use crate::model::{CampaignStatus, OwnedProperty, Property, ResearchLevel, WalkawayStyle};
 use crate::screens::Screen;
 use crate::sim::auction_sim::place_player_bid;
 use crate::sim::maintenance::{next_maintenance_week, trigger_due_maintenance};
@@ -56,6 +56,22 @@ impl App {
                 trigger_due_maintenance(&mut self.player);
                 self.screen = Screen::Portfolio;
             }
+            "conclusion" => {
+                self.start_new_game();
+                let properties: Vec<Property> = self
+                    .data
+                    .properties
+                    .iter()
+                    .filter(|template| [2, 6, 8].contains(&template.id))
+                    .map(Property::from_template)
+                    .collect();
+                for property in properties {
+                    self.seed_owned_property(property);
+                }
+                self.player.cash = 300_000;
+                self.campaign_status = CampaignStatus::Won;
+                self.screen = Screen::Dashboard;
+            }
             "title" => {}
             _ => {
                 self.start_new_game();
@@ -73,23 +89,27 @@ impl App {
             .cloned()
             .collect();
         for property in samples {
-            let price = property.reserve_price;
-            let property_deposit = deposit(price);
-            let property_debt = price - property_deposit;
-            let mut owned = OwnedProperty::new(
-                property.clone(),
-                price,
-                purchase_fees(price),
-                property_deposit,
-                property_debt,
-                price,
-                ResearchLevel::BuildingInspection,
-                WalkawayStyle::Balanced,
-            );
-            owned.is_leased = true;
-            owned.weekly_rent = weekly_rent_for_owned(&owned, self.market());
-            self.player.debt += property_debt;
-            self.player.properties.push(owned);
+            self.seed_owned_property(property);
         }
+    }
+
+    fn seed_owned_property(&mut self, property: Property) {
+        let price = property.reserve_price;
+        let property_deposit = deposit(price);
+        let property_debt = price - property_deposit;
+        let mut owned = OwnedProperty::new(
+            property,
+            price,
+            purchase_fees(price),
+            property_deposit,
+            property_debt,
+            price,
+            ResearchLevel::BuildingInspection,
+            WalkawayStyle::Balanced,
+        );
+        owned.is_leased = true;
+        owned.weekly_rent = weekly_rent_for_owned(&owned, self.market());
+        self.player.debt += property_debt;
+        self.player.properties.push(owned);
     }
 }

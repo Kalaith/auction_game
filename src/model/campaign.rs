@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 pub const CAMPAIGN_GOAL_NET_WORTH: i64 = 240_000;
 pub const CAMPAIGN_GOAL_PROPERTIES: usize = 3;
 pub const CAMPAIGN_GOAL_WEEKLY_RENT: i64 = 1_500;
-pub const CAMPAIGN_MAX_WEEKS: u32 = 40;
+pub const CAMPAIGN_MAX_WEEKS: u32 = 24;
 pub const WEEKLY_AUCTION_REGISTRATIONS: u8 = 2;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]

@@ -5,7 +5,7 @@ use crate::sim::valuation::{cash_needed_to_settle, deposit, net_worth, round_dow
 const STARTER_BORROWING_LIMIT: i64 = 620_000;
 const REPUTATION_BONUS: i64 = 35_000;
 const NET_WORTH_LEVERAGE: f32 = 0.85;
-const RENTAL_INCOME_LEVERAGE: i64 = 180;
+const RENTAL_INCOME_LEVERAGE: i64 = 280;
 const BID_INCREMENT: i64 = 10_000;
 const MAX_TEST_PRICE: i64 = 2_500_000;
 

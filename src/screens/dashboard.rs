@@ -90,7 +90,7 @@ impl App {
             if won {
                 "Three doors, dependable rent, and enough equity to keep growing: the first portfolio now works without pretending every auction was a win."
             } else {
-                "Week 40 has passed without all three parts of the brief. Review the gap: more houses, more rent, or more equity."
+                "Week 24 has passed without all three parts of the brief. Review the gap: more houses, more rent, or more equity."
             },
             82.0,
             166.0,

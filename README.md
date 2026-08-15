@@ -16,7 +16,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 
 ## Goal
 
-Before week 40, own three homes, earn $1,500 in weekly rent, and hold $240,000 net worth. A player usually needs both patient rental acquisitions and at least one value-creating sale or renovation to get there.
+Before week 24, own three homes, earn $1,500 in weekly rent, and hold $240,000 net worth. A player usually needs both patient rental acquisitions and at least one value-creating sale or renovation to get there.
 
 ## Controls
 

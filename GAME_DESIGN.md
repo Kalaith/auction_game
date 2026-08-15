@@ -6,7 +6,7 @@ The player is a disciplined small property investor growing from cash and a bank
 
 ## Campaign promise
 
-By the end of week 40 the player must simultaneously:
+By the end of week 24 the player must simultaneously:
 
 - own at least three homes;
 - collect at least $1,500 in gross weekly rent;
