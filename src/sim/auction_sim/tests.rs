@@ -98,6 +98,36 @@ fn auction_clock_waits_for_the_visible_opening_call() {
 }
 
 #[test]
+fn saved_auction_resumes_the_same_room_sequence() {
+    let mut original = auction();
+    for _ in 0..12 {
+        update_auction(&mut original, 0.1);
+    }
+    let json = serde_json::to_string(&original).expect("auction should save");
+    let mut restored: Auction = serde_json::from_str(&json).expect("auction should load");
+
+    for _ in 0..80 {
+        update_auction(&mut original, 0.1);
+        update_auction(&mut restored, 0.1);
+    }
+
+    assert_eq!(restored.current_bid, original.current_bid);
+    assert_eq!(restored.last_bidder, original.last_bidder);
+    assert_eq!(restored.rng_state, original.rng_state);
+    assert_eq!(restored.log.len(), original.log.len());
+}
+
+#[test]
+fn a_suspended_browser_frame_cannot_consume_the_room_clock() {
+    let mut auction = auction();
+    let before = auction.seconds_remaining;
+
+    update_auction(&mut auction, 30.0);
+
+    assert!(auction.seconds_remaining >= before - 0.11);
+}
+
+#[test]
 fn assertive_jump_moves_two_steps_and_changes_rival_pressure() {
     let mut auction = auction();
     let opening = auction.current_bid;

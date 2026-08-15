@@ -13,7 +13,7 @@ use crate::sim::auction_bidders::{
 use crate::sim::auction_events::{accept_post_auction_offer, post_auction_offer};
 use crate::sim::auction_events::{announce_on_market, place_vendor_bid, should_place_vendor_bid};
 use crate::sim::valuation::round_down_to_increment;
-use macroquad_toolkit::rng;
+use macroquad_toolkit::rng::SeededRng;
 
 pub const AUCTION_DURATION_SECONDS: f32 = 56.0;
 
@@ -91,6 +91,7 @@ pub fn create_auction(
         last_room_read: None,
         sold_post_auction: false,
         has_started: false,
+        rng_state: auction_seed(property, market),
     }
 }
 
@@ -113,6 +114,7 @@ pub fn update_auction(auction: &mut Auction, dt: f32) {
         return;
     }
 
+    let dt = dt.clamp(0.0, 0.1);
     auction.temperature = auction_temperature(auction);
     auction.seconds_remaining = (auction.seconds_remaining - dt).max(0.0);
     auction.call_timer -= dt;
@@ -124,7 +126,7 @@ pub fn update_auction(auction: &mut Auction, dt: f32) {
             let line = auctioneer_line(auction);
             push_log(auction, line);
         }
-        auction.call_timer = rng::gen_range(1.6, 3.0);
+        auction.call_timer = auction_rng_range(auction, 1.6, 3.0);
     }
 
     let mut bidder_to_place = None;
@@ -150,12 +152,12 @@ pub fn update_auction(auction: &mut Auction, dt: f32) {
 
         let chance = bid_chance(auction, index, next_bid);
 
-        if rng::chance(chance) {
+        if auction_rng_chance(auction, chance) {
             bidder_to_place = Some(index);
             break;
         }
 
-        auction.bidders[index].reaction_timer = rng::gen_range(1.1, 3.1);
+        auction.bidders[index].reaction_timer = auction_rng_range(auction, 1.1, 3.1);
     }
 
     if let Some(index) = bidder_to_place {
@@ -397,7 +399,7 @@ fn place_npc_bid(auction: &mut Auction, index: usize) {
         auction.bidders[index].mood = BidderMood::Interested;
     }
     auction.bidders[index].tell = bid_tell(&auction.bidders[index]).to_string();
-    auction.bidders[index].reaction_timer = rng::gen_range(1.2, 3.2);
+    auction.bidders[index].reaction_timer = auction_rng_range(auction, 1.2, 3.2);
     extend_if_needed(auction);
     auction.temperature = auction_temperature(auction);
 
@@ -589,6 +591,28 @@ fn bidder_effective_ceiling(auction: &Auction, index: usize) -> i64 {
     } else {
         bidder.max_price
     }
+}
+
+fn auction_seed(property: &Property, market: &MarketEvent) -> u64 {
+    let identity = (property.id as u64 + 1).wrapping_mul(0x9E37_79B9_7F4A_7C15);
+    identity
+        ^ (property.reserve_price as u64).rotate_left(17)
+        ^ (property.guide_price as u64).rotate_left(39)
+        ^ u64::from(market.buyer_budget_modifier.to_bits()).rotate_left(7)
+}
+
+fn auction_rng_range(auction: &mut Auction, low: f32, high: f32) -> f32 {
+    let mut rng = SeededRng::from_state(auction.rng_state);
+    let value = rng.range_f32(low, high);
+    auction.rng_state = rng.state();
+    value
+}
+
+fn auction_rng_chance(auction: &mut Auction, probability: f32) -> bool {
+    let mut rng = SeededRng::from_state(auction.rng_state);
+    let result = rng.chance(probability.clamp(0.0, 1.0));
+    auction.rng_state = rng.state();
+    result
 }
 
 fn bid_chance(auction: &Auction, index: usize, next_bid: i64) -> f32 {

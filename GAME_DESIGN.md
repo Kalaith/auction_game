@@ -33,6 +33,7 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - One declared vendor bid may move the auction below reserve, but can never buy the property or put it on the market.
 - A pass-in moves to a private vendor counteroffer below reserve; accepting still requires finance and can still violate the player's walk-away.
 - ASSERT is theatre with asymmetric consequences: it discourages rational buyers and can provoke emotional ones.
+- Each auction owns a serialized random stream, so saving and reloading cannot reroll rival reactions or auctioneer timing.
 - A room read is earned by lowering the paddle; the observation becomes stale on the next bid, and better diligence makes it more precise.
 - A renovation is recommended only when its expected value exceeds its full quoted effect.
 - Known structural defects must be repaired before a tenant can be placed.

@@ -92,6 +92,8 @@ pub struct Auction {
     pub sold_post_auction: bool,
     #[serde(default = "auction_started_default")]
     pub has_started: bool,
+    #[serde(default = "auction_rng_default")]
+    pub rng_state: u64,
 }
 
 impl Auction {
@@ -114,4 +116,8 @@ fn jump_available_default() -> bool {
 
 fn auction_started_default() -> bool {
     true
+}
+
+fn auction_rng_default() -> u64 {
+    0xA117_C710_5EED_2026
 }

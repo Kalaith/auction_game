@@ -11,6 +11,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - Set a walk-away price before bidding.
 - Review auction-day terms, deposit exposure, and finance before tapping START AUCTION CALLS.
 - Raise normally, make one assertive jump, wait for a rival tell, or walk away in live auctions.
+- Resume a saved live auction without rerolling the room, and survive a suspended browser tab without losing the clock.
 - Tap WAIT & READ ROOM to earn a current observation; the next bid makes that read stale.
 - Hear a legal vendor bid below the hidden reserve and the auctioneer's decisive on-market call.
 - Negotiate a visible vendor counteroffer after a pass-in, or leave the private deal untouched.
