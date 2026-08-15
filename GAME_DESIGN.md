@@ -53,8 +53,8 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - The review card labels whether the proposed ASK is appraisal-supported, demand-supported, or above appraisal with vacancy risk; the resolution uses that same visible classification.
 - A due review pauses week advancement from every screen and routes the player to the affected tenancy, so the decision cannot be bypassed through another holding.
 - Rent supports cashflow and borrowing capacity, but debt, ownership costs, and scheduled maintenance remain visible.
-- Spare cash can reduce a selected property's principal, trading liquidity for lower debt and more bank headroom.
-- A clean, leased home held for four weeks can release equity up to 80% LVR and the bank limit; the cash funds growth while debt and interest rise.
+- Spare cash can reduce a selected property's principal, trading liquidity for lower debt and more bank headroom. Interest is calculated to the nearest dollar, and the result reports the exact weekly saving.
+- A clean, leased home held for four weeks can release equity up to 80% LVR and the bank limit; the cash funds growth while debt and interest rise. The result separates gross debt added, bank fee, cash released, and the exact weekly interest increase.
 - Each property reports its current equity, loan-to-value ratio, and annual interest rate so refinance capacity is legible rather than magical.
 - Each holding also reports its own net weekly cashflow after effective rent, management, interest, property costs, and current maintenance losses.
 - Gross rent remains a campaign constraint, but the conclusion separately audits net weekly operations and gives a next-cycle deleveraging warning when a winning portfolio is still cashflow-negative.

@@ -17,10 +17,15 @@ fn market(budget_modifier: f32) -> MarketEvent {
 }
 
 #[test]
-fn debt_interest_rounds_up_to_hundreds() {
+fn debt_interest_tracks_principal_to_the_nearest_dollar() {
     let steady = market(0.0);
-    assert_eq!(weekly_debt_interest(400_000, &steady), 400);
-    assert_eq!(weekly_debt_interest(410_000, &steady), 400);
+    assert_eq!(weekly_debt_interest(400_000, &steady), 380);
+    assert_eq!(weekly_debt_interest(410_000, &steady), 390);
+    assert_eq!(
+        weekly_debt_interest(390_000, &steady),
+        371,
+        "a $10k principal payment must produce a visible weekly saving"
+    );
     assert!(weekly_debt_interest(400_000, &market(-0.04)) > weekly_debt_interest(400_000, &steady));
 }
 

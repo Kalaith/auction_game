@@ -92,7 +92,7 @@ pub fn weekly_debt_interest(debt: i64, market: &MarketEvent) -> i64 {
     }
 
     let rate = weekly_interest_rate(market);
-    round_up_to_100(debt as f32 * rate)
+    (debt as f32 * rate).ceil() as i64
 }
 
 pub fn annual_interest_rate_percent(market: &MarketEvent) -> f32 {
@@ -195,10 +195,6 @@ pub fn next_unlock_note(week: u32, net_worth: i64, reputation: i32) -> &'static 
     } else {
         "All starter suburbs are unlocked."
     }
-}
-
-fn round_up_to_100(value: f32) -> i64 {
-    ((value / 100.0).ceil() as i64) * 100
 }
 
 #[cfg(test)]

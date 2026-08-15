@@ -211,6 +211,37 @@ impl App {
                     "Seasoned equity is available. Releasing it raises debt and funds the next deposit."
                         .to_string();
             }
+            "portfolio_refinanced" => {
+                self.start_new_game();
+                self.seed_portfolio_capture();
+                if let Some(owned) = self.player.properties.first_mut() {
+                    owned.weeks_held = 4;
+                    owned.debt -= 70_000;
+                    self.player.debt -= 70_000;
+                }
+                if let Some(property_id) = self
+                    .player
+                    .properties
+                    .first()
+                    .map(|owned| owned.property.id)
+                {
+                    self.refinance_owned_property(property_id);
+                }
+                self.screen = Screen::Portfolio;
+            }
+            "portfolio_paydown" => {
+                self.start_new_game();
+                self.seed_portfolio_capture();
+                if let Some(property_id) = self
+                    .player
+                    .properties
+                    .first()
+                    .map(|owned| owned.property.id)
+                {
+                    self.pay_down_property_debt(property_id);
+                }
+                self.screen = Screen::Portfolio;
+            }
             "portfolio_leasing" => {
                 self.start_new_game();
                 self.seed_portfolio_capture();

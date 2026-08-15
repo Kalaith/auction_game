@@ -1,5 +1,6 @@
 use super::App;
 use crate::model::PropertyId;
+use crate::sim::campaign::weekly_debt_interest;
 use crate::sim::finance::{pay_down_principal, refinance_property};
 use crate::sim::maintenance::repair_maintenance;
 use crate::sim::rental::{
@@ -10,31 +11,84 @@ use crate::ui::format_money;
 
 impl App {
     pub(crate) fn pay_down_property_debt(&mut self, property_id: PropertyId) {
+        let market = self.market().clone();
+        let interest_before = self
+            .player
+            .properties
+            .iter()
+            .find(|owned| owned.property.id == property_id)
+            .map(|owned| weekly_debt_interest(owned.debt, &market))
+            .unwrap_or(0);
         let paid = pay_down_principal(&mut self.player, property_id, 10_000);
         if paid == 0 {
             self.status =
                 "Keep at least $10,000 cash available for a principal payment.".to_string();
             return;
         }
-        self.status = format!(
-            "Paid {} off the selected loan. Interest pressure and bank debt both fell.",
-            format_money(paid)
-        );
+        let interest_after = self
+            .player
+            .properties
+            .iter()
+            .find(|owned| owned.property.id == property_id)
+            .map(|owned| weekly_debt_interest(owned.debt, &market))
+            .unwrap_or(0);
+        let weekly_saving = interest_before - interest_after;
+        self.status = if weekly_saving > 0 {
+            format!(
+                "Paid {} off the selected loan. Weekly interest fell {} to {} per week; bank debt fell too.",
+                format_money(paid),
+                format_money(weekly_saving),
+                format_money(interest_after)
+            )
+        } else {
+            format!(
+                "Paid {} off the selected loan. Bank debt fell; weekly interest remains {} per week at dollar precision.",
+                format_money(paid),
+                format_money(interest_after)
+            )
+        };
     }
 
     pub(crate) fn refinance_owned_property(&mut self, property_id: PropertyId) {
         let market = self.market().clone();
+        let interest_before = self
+            .player
+            .properties
+            .iter()
+            .find(|owned| owned.property.id == property_id)
+            .map(|owned| weekly_debt_interest(owned.debt, &market))
+            .unwrap_or(0);
         let Some(result) = refinance_property(&mut self.player, property_id, &market) else {
             self.status = "Refinance needs four leased weeks, clean maintenance, equity below 80% LVR, and bank room."
                 .to_string();
             return;
         };
-        self.status = format!(
-            "Refinanced {} of equity: {} released after the {} bank fee. Debt and weekly interest rose.",
-            format_money(result.debt_added),
-            format_money(result.cash_released),
-            format_money(result.fee)
-        );
+        let interest_after = self
+            .player
+            .properties
+            .iter()
+            .find(|owned| owned.property.id == property_id)
+            .map(|owned| weekly_debt_interest(owned.debt, &market))
+            .unwrap_or(0);
+        let weekly_increase = interest_after - interest_before;
+        self.status = if weekly_increase > 0 {
+            format!(
+                "Released {} cash from {} new debt after the {} fee. Weekly interest rose {} to {} per week.",
+                format_money(result.cash_released),
+                format_money(result.debt_added),
+                format_money(result.fee),
+                format_money(weekly_increase),
+                format_money(interest_after)
+            )
+        } else {
+            format!(
+                "Released {} cash from {} new debt after the {} fee. Weekly interest remains {} per week at dollar precision.",
+                format_money(result.cash_released),
+                format_money(result.debt_added),
+                format_money(result.fee),
+                format_money(interest_after)
+            )
+        };
     }
 
     pub(crate) fn lease_property(&mut self, property_id: PropertyId) {

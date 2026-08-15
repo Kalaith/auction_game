@@ -24,10 +24,10 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - See when the reserve is not yet met, and use full diligence to read a passed-in seller as flexible, negotiable, or firm without revealing their exact floor.
 - Build a season record that credits disciplined exits alongside purchases and profitable sales.
 - Close each season with the registrations deliberately passed up, final rent, realised sale profit, and auction record visible together.
-- Pay down individual property loans when freeing bank headroom matters more than keeping cash liquid.
-- Refinance seasoned rental equity to fund another deposit without selling the home.
+- Pay down individual property loans when freeing bank headroom matters more than keeping cash liquid, with the exact weekly interest effect reported after payment.
+- Refinance seasoned rental equity to fund another deposit without selling the home, with released cash, new debt, fee, and weekly interest increase stated separately.
 - Read the seller-side auction ledger: reserve, bidder depth, debt cleared, settlement release, and true profit.
-- Read a weekly portfolio statement instead of guessing where rent and cash went.
+- Read a weekly portfolio statement instead of guessing where rent and cash went; mortgage interest is calculated to the nearest dollar so principal changes have proportionate effects.
 - Renovate, fund a one-week rental campaign, place or end tenancies, collect rent, handle scheduled maintenance, hold, or sell purchased properties.
 - Track every property, cash, debt, rent, weekly cashflow, fees, repairs, and net worth.
 - Read each home's equity, loan-to-value ratio, and market-adjusted annual loan rate before deciding whether to hold, pay down, refinance, or sell.
