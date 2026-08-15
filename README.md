@@ -31,6 +31,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - Read each home's equity, loan-to-value ratio, and market-adjusted annual loan rate before deciding whether to hold, pay down, refinance, or sell.
 - Underwrite the rent at your chosen walk-away price, including management, property outgoings, and loan interest, before registering to bid.
 - Keep that rental cashflow forecast visible beside margin and finance headroom while the auction is live.
+- Carry a visible registered paddle from the bidder-terms lobby into the room, where the current leading bidder is always named.
 - Diagnose every owned home's true weekly result after its rent, management, loan interest, property costs, and maintenance impact.
 - Handle scheduled eight-week rent reviews: renew safely, or ask for the current market rent and risk a vacancy in a weak tenant market.
 - Preserve a safe cash buffer that grows by $8,000 per portfolio door; auction guidance warns when the next bid leaves too little resilience.

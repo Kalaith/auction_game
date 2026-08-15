@@ -498,7 +498,7 @@ fn draw_live_decision_panel(
         state_color,
     );
     draw_centered_label(
-        "Current Bid",
+        &current_bid_caption(auction),
         Rect::new(rect.x + 36.0, rect.y + 86.0, rect.w - 72.0, 28.0),
         19,
         TEXT_DIM,
@@ -663,6 +663,27 @@ fn draw_live_decision_panel(
         return Some(AuctionUiAction::WalkAway);
     }
     None
+}
+
+fn current_bid_caption(auction: &Auction) -> String {
+    match auction.last_bidder.as_ref() {
+        Some(BidderActor::Player) => {
+            format!(
+                "Current Bid · Paddle {} leads",
+                auction.player_paddle_number()
+            )
+        }
+        Some(BidderActor::Npc(index)) => format!(
+            "Current Bid · {} leads",
+            auction
+                .bidders
+                .get(*index)
+                .map(|bidder| bidder.name.as_str())
+                .unwrap_or("another bidder")
+        ),
+        Some(BidderActor::Vendor) => "Declared Vendor Bid · not yet selling".to_string(),
+        None => "Opening Call · no leading bidder".to_string(),
+    }
 }
 
 fn draw_bidder_panel(rect: Rect, auction: &Auction, notebook: &[crate::model::RivalRecord]) {

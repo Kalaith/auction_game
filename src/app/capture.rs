@@ -67,6 +67,21 @@ impl App {
                     }
                 }
             }
+            "auction_final_call" => {
+                self.start_new_game();
+                if let Some(property) = self.available_properties.first().cloned() {
+                    self.start_auction(property.id);
+                    if let Some(auction) = self.current_auction.as_mut() {
+                        begin_auction_calls(auction);
+                        auction.current_bid = auction.reserve_price - auction.bid_increment;
+                        place_player_bid(auction);
+                        auction.seconds_remaining = 6.0;
+                        auction.temperature = AuctionTemperature::FinalCall;
+                    }
+                    self.status = "Your paddle leads at the final call. Tap a visible action now."
+                        .to_string();
+                }
+            }
             "auction_read" => {
                 self.start_new_game();
                 if let Some(property) = self.available_properties.first().cloned() {

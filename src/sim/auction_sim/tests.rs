@@ -98,6 +98,15 @@ fn auction_clock_waits_for_the_visible_opening_call() {
 }
 
 #[test]
+fn player_registration_receives_a_stable_visible_paddle_number() {
+    let first = auction();
+    let second = auction();
+
+    assert_eq!(first.player_paddle_number(), second.player_paddle_number());
+    assert!((100..900).contains(&first.player_paddle_number()));
+}
+
+#[test]
 fn saved_auction_resumes_the_same_room_sequence() {
     let mut original = auction();
     for _ in 0..12 {

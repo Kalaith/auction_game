@@ -110,6 +110,10 @@ impl Auction {
     pub fn jump_bid(&self) -> i64 {
         self.current_bid + self.bid_increment * 2
     }
+
+    pub fn player_paddle_number(&self) -> u16 {
+        100 + ((self.property.id * 37) % 800) as u16
+    }
 }
 
 fn jump_available_default() -> bool {

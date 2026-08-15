@@ -21,6 +21,11 @@ pub(super) fn draw_auction_day_lobby(
         Rect::new(rect.x + rect.w - 126.0, rect.y + 18.0, 98.0, 28.0),
         POSITIVE,
     );
+    draw_badge(
+        &format!("PADDLE {}", auction.player_paddle_number()),
+        Rect::new(rect.x + rect.w - 244.0, rect.y + 18.0, 106.0, 28.0),
+        crate::ui::BLUE,
+    );
     label("Auction Day", rect.x + 28.0, rect.y + 48.0, 32, TEXT_BRIGHT);
     draw_wrapped_text(
         "Registration is complete. When the hammer falls the contract is unconditional. Check the cash and ceiling before the auctioneer opens the bidding.",
