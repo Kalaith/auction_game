@@ -17,6 +17,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - Tap WAIT & READ ROOM to earn a current observation; the next bid makes that read stale.
 - Meet the same named rivals across Saturdays and build a notebook of their appearances, wins, stretching behaviour, and highest rooms.
 - Hear a legal vendor bid below the hidden reserve and the auctioneer's decisive on-market call.
+- Open in $10,000 rises, then bid in tighter $5,000 steps after the on-market call.
 - Negotiate a visible vendor counteroffer after a pass-in, or leave the private deal untouched.
 - Build a season record that credits disciplined exits alongside purchases and profitable sales.
 - Close each season with the registrations deliberately passed up, final rent, realised sale profit, and auction record visible together.

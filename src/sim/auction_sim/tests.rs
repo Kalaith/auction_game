@@ -213,10 +213,28 @@ fn crossing_the_true_reserve_announces_on_market_without_revealing_it_early() {
     place_player_bid(&mut auction);
 
     assert!(auction.on_market_announced);
+    assert_eq!(
+        auction.bid_increment,
+        crate::sim::auction_events::ON_MARKET_BID_INCREMENT
+    );
     assert!(auction
         .log
         .iter()
         .any(|entry| entry.text.contains("on the market")));
+}
+
+#[test]
+fn on_market_call_tightens_the_next_bid_without_changing_the_current_price() {
+    let mut auction = auction();
+    let opening_increment = auction.bid_increment;
+    auction.current_bid = auction.reserve_price - opening_increment;
+
+    place_player_bid(&mut auction);
+    let price_at_call = auction.current_bid;
+
+    assert_eq!(price_at_call, auction.reserve_price);
+    assert_eq!(auction.next_bid(), price_at_call + 5_000);
+    assert_eq!(auction.jump_bid(), price_at_call + 10_000);
 }
 
 #[test]

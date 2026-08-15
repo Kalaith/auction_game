@@ -30,6 +30,7 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - Research buys narrower uncertainty, not a guaranteed answer.
 - A walk-away is a commitment device, not a hard lock.
 - The vendor's true reserve stays hidden; research provides an estimate and the auctioneer announces when bidding crosses the real line.
+- The room opens in $10,000 rises. Crossing reserve triggers the on-market call and the auctioneer tightens every later raise to $5,000, making late discipline more granular.
 - One declared vendor bid may move the auction below reserve, but can never buy the property or put it on the market.
 - A pass-in moves to a private vendor counteroffer below reserve; accepting still requires finance and can still violate the player's walk-away.
 - A hammer win requires a 10% contract deposit plus separately visible acquisition costs; both are included in settlement cash and the deal remains unconditional.

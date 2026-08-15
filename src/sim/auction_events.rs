@@ -1,6 +1,8 @@
 use crate::model::{Auction, AuctionStatus, BidderActor};
 use crate::sim::auction_sim::{push_log, AUCTION_DURATION_SECONDS};
 
+pub const ON_MARKET_BID_INCREMENT: i64 = 5_000;
+
 pub(super) fn should_place_vendor_bid(auction: &Auction) -> bool {
     !auction.vendor_bid_used
         && auction.current_bid < auction.reserve_price
@@ -33,9 +35,11 @@ pub(super) fn announce_on_market(auction: &mut Auction) {
         return;
     }
     auction.on_market_announced = true;
+    auction.bid_increment = ON_MARKET_BID_INCREMENT;
     push_log(
         auction,
-        "We are on the market. The highest bidder now buys the home.".to_string(),
+        "We are on the market. The highest bidder buys; the auctioneer now takes $5,000 rises."
+            .to_string(),
     );
 }
 
