@@ -98,6 +98,25 @@ impl App {
                             .to_string();
                 }
             }
+            "auction_walkaway" => {
+                self.start_new_game();
+                if let Some(property) = self.available_properties.first().cloned() {
+                    self.start_auction(property.id);
+                    if let Some(auction) = self.current_auction.as_mut() {
+                        begin_auction_calls(auction);
+                        auction.is_player_active = false;
+                        auction.player_exit_bid = Some(auction.player_walkaway_price);
+                        auction.current_bid = auction.player_walkaway_price + auction.bid_increment;
+                        auction.last_bidder = Some(BidderActor::Npc(0));
+                        auction.on_market_announced = true;
+                        auction.status =
+                            Some(AuctionStatus::SoldToNpc(auction.bidders[0].name.clone()));
+                    }
+                    self.status =
+                        "The room proved your limit right. Return to listings to bank the discipline reputation."
+                            .to_string();
+                }
+            }
             "auction_read" => {
                 self.start_new_game();
                 if let Some(property) = self.available_properties.first().cloned() {
@@ -189,6 +208,20 @@ impl App {
                 self.advance_week();
                 self.screen = Screen::Dashboard;
                 self.status = "Week closed. Compare rent against every portfolio cost.".to_string();
+            }
+            "dashboard_shortfall" => {
+                self.start_new_game();
+                self.seed_portfolio_capture();
+                if let Some(removed) = self.player.properties.pop() {
+                    self.player.debt -= removed.debt;
+                }
+                self.player.cash = 50;
+                self.screen = Screen::Dashboard;
+                self.advance_week();
+                self.screen = Screen::Dashboard;
+                self.status =
+                    "Cash ran out during the weekly close. The unpaid remainder became debt."
+                        .to_string();
             }
             "portfolio_maintenance" => {
                 self.start_new_game();

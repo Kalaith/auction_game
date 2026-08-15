@@ -124,6 +124,27 @@ fn rent_offsets_interest_holding_and_management_before_cash_moves() {
 }
 
 #[test]
+fn a_cash_shortfall_uses_cash_first_and_adds_only_the_remainder_to_debt() {
+    let steady = market(0.0);
+    let mut player = Player::new();
+    let mut owned = owned_property(1);
+    owned.is_leased = true;
+    owned.weekly_rent = 550;
+    player.debt = owned.debt;
+    player.properties.push(owned);
+    player.cash = 25;
+    let debt_before = player.debt;
+
+    let pressure = apply_weekly_pressure(&mut player, &steady);
+    let weekly_loss = pressure.total - pressure.rental_income;
+
+    assert!(weekly_loss > 25);
+    assert_eq!(player.cash, 0);
+    assert_eq!(pressure.shortfall_added_to_debt, weekly_loss - 25);
+    assert_eq!(player.debt, debt_before + pressure.shortfall_added_to_debt);
+}
+
+#[test]
 fn portfolio_cashflow_matches_the_weekly_pressure_ledger() {
     let steady = market(0.0);
     let mut player = Player::new();

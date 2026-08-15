@@ -374,6 +374,40 @@ fn quick_resolution_always_reaches_a_hammer_or_pass_in() {
 }
 
 #[test]
+fn discipline_reputation_requires_a_rival_to_buy_above_the_players_limit() {
+    let mut auction = auction();
+    auction.player_exit_bid = Some(auction.player_walkaway_price);
+    auction.current_bid = auction.player_walkaway_price + auction.bid_increment;
+    auction.status = Some(AuctionStatus::SoldToNpc("Victor Hale".to_string()));
+
+    assert!(earned_discipline_reputation(&auction));
+
+    auction.current_bid = auction.player_walkaway_price;
+    assert!(!earned_discipline_reputation(&auction));
+
+    auction.current_bid += auction.bid_increment;
+    auction.player_exit_bid = None;
+    assert!(!earned_discipline_reputation(&auction));
+
+    auction.player_exit_bid = Some(auction.player_walkaway_price);
+    auction.status = Some(AuctionStatus::PassedIn);
+    assert!(!earned_discipline_reputation(&auction));
+}
+
+#[test]
+fn a_disciplined_exit_updates_bank_reputation_and_the_career_ledger_together() {
+    let mut auction = auction();
+    auction.player_exit_bid = Some(auction.player_walkaway_price);
+    auction.current_bid = auction.player_walkaway_price + auction.bid_increment;
+    auction.status = Some(AuctionStatus::SoldToNpc("Victor Hale".to_string()));
+    let mut player = Player::new();
+
+    assert!(award_discipline_reputation(&mut player, &auction));
+    assert_eq!(player.reputation, 1);
+    assert_eq!(player.career.disciplined_walkaways, 1);
+}
+
+#[test]
 fn passed_in_vendor_counter_can_be_accepted_below_reserve() {
     let mut auction = auction();
     auction.current_bid = auction.reserve_price - auction.bid_increment * 3;

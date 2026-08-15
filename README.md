@@ -40,6 +40,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - Carry completed reviews and review-created vacancies into the persistent season ledger and final portfolio debrief.
 - Keep the original gross-rent campaign target, while the final ledger separately names true net weekly cashflow and warns when a winning portfolio still needs deleveraging.
 - Preserve a safe cash buffer that grows by $8,000 per portfolio door; auction guidance warns when the next bid leaves too little resilience.
+- When borrowing power reaches zero, the dashboard names the intended recovery routes: pay down debt, earn discipline reputation by leaving an overheated auction, or recycle an asset through sale.
 
 ## Goal
 

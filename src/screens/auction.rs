@@ -13,8 +13,9 @@ use crate::sim::auction_events::{
     PostAuctionTestResult,
 };
 use crate::sim::auction_sim::{
-    begin_auction_calls, hold_player_position, place_player_bid, place_player_jump_bid,
-    quick_resolve_auction, stop_player_bidding,
+    award_discipline_reputation, begin_auction_calls, earned_discipline_reputation,
+    hold_player_position, place_player_bid, place_player_jump_bid, quick_resolve_auction,
+    stop_player_bidding,
 };
 use crate::sim::finance::{finance_snapshot, rental_underwrite, FinanceSnapshot};
 use crate::sim::research::estimate_reserve;
@@ -159,12 +160,7 @@ impl App {
             Some(AuctionUiAction::ReturnToListings) => {
                 record_completed_room(&mut self.player.rival_notebook, &auction);
                 if let Some(auction) = &self.current_auction {
-                    if matches!(auction.status, Some(AuctionStatus::SoldToNpc(_)))
-                        && auction.player_exit_bid.is_some()
-                        && auction.current_bid > auction.player_walkaway_price
-                    {
-                        self.player.reputation += 1;
-                        self.player.career.disciplined_walkaways += 1;
+                    if award_discipline_reputation(&mut self.player, auction) {
                         self.status =
                             "Discipline reputation +1 for letting an overheated room win."
                                 .to_string();
@@ -256,6 +252,15 @@ impl App {
                     20,
                     TEXT,
                 );
+                if earned_discipline_reputation(auction) {
+                    label(
+                        "+1 discipline reputation when you return",
+                        rect.x + 26.0,
+                        rect.y + 158.0,
+                        18,
+                        POSITIVE,
+                    );
+                }
                 if button(
                     Rect::new(rect.x + 36.0, rect.y + rect.h - 64.0, rect.w - 72.0, 44.0),
                     "Return To Listings",

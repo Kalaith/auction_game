@@ -264,6 +264,11 @@ impl App {
         let card_w = (width - gap * 3.0) / 4.0;
         let (property_count, weekly_rent, _) = campaign_progress(&self.player, self.market());
         let buying_power = max_financeable_bid(&self.player, self.market());
+        let buying_power_note = if buying_power == 0 && !self.player.properties.is_empty() {
+            "Pay debt · exit hot rooms for rep"
+        } else {
+            "Max next bid"
+        };
         let reputation_note = format!("Rep {:+}", self.player.reputation);
         let stats = [
             (
@@ -275,7 +280,7 @@ impl App {
             (
                 "Buying Power",
                 format_compact_money(buying_power),
-                "Max next bid".to_string(),
+                buying_power_note.to_string(),
                 POSITIVE,
             ),
             (

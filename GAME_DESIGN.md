@@ -59,6 +59,7 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - Each holding also reports its own net weekly cashflow after effective rent, management, interest, property costs, and current maintenance losses.
 - Gross rent remains a campaign constraint, but the conclusion separately audits net weekly operations and gives a next-cycle deleveraging warning when a winning portfolio is still cashflow-negative.
 - The safe-cash target grows by $8,000 per door (with an $18,000 starter minimum), and both bidder terms and live guidance flag bids that breach it.
+- A maxed bank is a strategic constraint rather than a dead end: the dashboard points to principal paydown or discipline reputation, while the portfolio keeps sale and refinance consequences visible.
 - A sale outcome separates the hammer price from fees, loan repayment, settlement cash released, and true deal profit.
 - Every advanced week closes a visible statement for rent, management, interest, property costs, net cashflow, and debt-funded shortfall.
 - Maintenance checks occur on a disclosed schedule, reduce collected rent until repaired, and never arrive as uncontrolled random punishment.

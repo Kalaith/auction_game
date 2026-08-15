@@ -1,6 +1,6 @@
 use crate::model::{
     Auction, AuctionStatus, AuctionTemperature, BidLog, Bidder, BidderActor, BidderMood,
-    BidderProfileData, BidderType, MarketEvent, Property, ResearchLevel, WalkawayStyle,
+    BidderProfileData, BidderType, MarketEvent, Player, Property, ResearchLevel, WalkawayStyle,
 };
 #[cfg(test)]
 use crate::model::{Condition, DealArchetype};
@@ -282,6 +282,21 @@ pub fn stop_player_bidding(auction: &mut Auction) {
             crate::ui::format_money(auction.current_bid)
         ),
     );
+}
+
+pub fn earned_discipline_reputation(auction: &Auction) -> bool {
+    matches!(auction.status, Some(AuctionStatus::SoldToNpc(_)))
+        && auction.player_exit_bid.is_some()
+        && auction.current_bid > auction.player_walkaway_price
+}
+
+pub fn award_discipline_reputation(player: &mut Player, auction: &Auction) -> bool {
+    if !earned_discipline_reputation(auction) {
+        return false;
+    }
+    player.reputation += 1;
+    player.career.disciplined_walkaways += 1;
+    true
 }
 
 pub fn hold_player_position(auction: &mut Auction) -> String {
