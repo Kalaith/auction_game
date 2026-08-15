@@ -13,6 +13,8 @@ pub(super) fn draw_loan_control(
     owned: &OwnedProperty,
     cash: i64,
     refinance_capacity: i64,
+    refinance_cash: i64,
+    refinance_interest_increase: i64,
     lvr_percent: f32,
 ) -> Option<LoanAction> {
     dark_panel(rect);
@@ -32,7 +34,10 @@ pub(super) fn draw_loan_control(
         TEXT_BRIGHT,
     );
     let refinance_note = if refinance_capacity >= 10_000 {
-        format!("Refi {}", format_money(refinance_capacity))
+        format!(
+            "Cost +{}/wk",
+            format_compact_money(refinance_interest_increase)
+        )
     } else if owned.weeks_held < 4 {
         "Refi after 4w".to_string()
     } else {
@@ -54,9 +59,14 @@ pub(super) fn draw_loan_control(
     ) {
         return Some(LoanAction::PayDown);
     }
+    let refinance_label = if refinance_capacity >= 10_000 {
+        format!("Release {}", format_compact_money(refinance_cash))
+    } else {
+        "Release Equity".to_string()
+    };
     if button(
         Rect::new(rect.x + rect.w - 154.0, rect.y + 44.0, 138.0, 30.0),
-        "Release Equity",
+        &refinance_label,
         refinance_capacity >= 10_000,
         ButtonTone::Primary,
     ) {

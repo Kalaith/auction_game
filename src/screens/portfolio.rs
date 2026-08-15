@@ -8,8 +8,10 @@ use crate::screens::portfolio_widgets::{
     draw_hold_decision, draw_lease_decision, draw_maintenance_decision, draw_problem_card,
     draw_rental_campaign, draw_skip_renovation, draw_upgrade_decision, recommended_upgrade,
 };
-use crate::sim::campaign::{annual_interest_rate_percent, portfolio_weekly_cashflow};
-use crate::sim::finance::{borrowing_limit, property_cashflow, refinance_capacity};
+use crate::sim::campaign::{
+    annual_interest_rate_percent, portfolio_weekly_cashflow, weekly_debt_interest,
+};
+use crate::sim::finance::{borrowing_limit, property_cashflow, refinance_capacity, REFINANCE_FEE};
 use crate::sim::rental::{
     leasing_cost, portfolio_rental_snapshot, proposed_review_rent, rent_review_due,
     rent_review_outlook, weekly_rent_for_owned,
@@ -136,6 +138,11 @@ impl App {
 
         let owned = self.player.properties[self.portfolio_index].clone();
         let estimate = current_value(&owned, self.market());
+        let property_week = property_cashflow(&owned, self.market());
+        let refinance_room = refinance_capacity(&self.player, owned.property.id, self.market());
+        let refinance_interest_increase =
+            weekly_debt_interest(owned.debt + refinance_room, self.market())
+                - property_week.loan_interest;
         let position = estimate
             - owned.purchase_price
             - owned.purchase_fees
@@ -159,11 +166,12 @@ impl App {
         );
         label_fit(
             &format!(
-                "Bought for {} | Held {} weeks | {} | Loan {:.1}% p.a.",
+                "Bought {} | Held {}w | {} | {:.1}% loan · {}/wk interest",
                 format_money(owned.purchase_price),
                 owned.weeks_held,
                 owned.property.condition.label(),
-                annual_interest_rate_percent(self.market())
+                annual_interest_rate_percent(self.market()),
+                format_money(property_week.loan_interest)
             ),
             main.x + 372.0,
             main.y + 72.0,
@@ -209,7 +217,9 @@ impl App {
             Rect::new(main.x + main.w - 298.0, main.y + 14.0, 280.0, 82.0),
             &owned,
             self.player.cash,
-            refinance_capacity(&self.player, owned.property.id, self.market()),
+            refinance_room,
+            (refinance_room - REFINANCE_FEE).max(0),
+            refinance_interest_increase,
             if estimate > 0 {
                 owned.debt as f32 / estimate as f32 * 100.0
             } else {
@@ -276,7 +286,7 @@ impl App {
             if draw_hold_decision(
                 hold_rect,
                 &owned,
-                property_cashflow(&owned, self.market()).net_cashflow,
+                property_week.net_cashflow,
                 portfolio_has_due_review,
                 self.campaign_status.is_finished(),
             ) {

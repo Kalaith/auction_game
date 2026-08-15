@@ -2,6 +2,7 @@ pub mod auction;
 mod auction_debrief;
 mod auction_lobby;
 mod auction_property_panel;
+mod auction_room_panel;
 pub mod auction_widgets;
 pub mod briefing;
 pub mod dashboard;
