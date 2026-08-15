@@ -39,9 +39,13 @@ pub(crate) struct PurchaseDebrief {
     pub(crate) renovation_allowance: i64,
     pub(crate) walkaway_delta: i64,
     pub(crate) projected_profit: i64,
+    #[serde(default)]
     pub(crate) contract_deposit: i64,
+    #[serde(default)]
     pub(crate) loan_amount: i64,
+    #[serde(default)]
     pub(crate) weekly_rent: i64,
+    #[serde(default)]
     pub(crate) weekly_rental_cashflow: i64,
     pub(crate) lesson: String,
 }

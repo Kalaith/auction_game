@@ -14,6 +14,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - Raise normally, make one assertive jump, wait for a rival tell, or walk away in live auctions.
 - Watch different emotional rivals break their own limits for different reasons while investors, developers, and bargain hunters keep their ceilings.
 - Resume a saved live auction without rerolling the room, and survive a suspended browser tab without losing the clock.
+- Load older saves safely: rebuilt hammer ledgers, live-room state, leasing campaigns, and rent-review schedules all have migration defaults.
 - Tap WAIT & READ ROOM to earn a current observation; the next bid makes that read stale.
 - Meet the same named rivals across Saturdays and build a notebook of their appearances, wins, stretching behaviour, and highest rooms.
 - Hear a legal vendor bid below the hidden reserve and the auctioneer's decisive on-market call.

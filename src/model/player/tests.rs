@@ -51,3 +51,28 @@ fn weekly_restraint_is_capped_to_the_two_registration_allowance() {
 
     assert_eq!(career.unused_registrations, 3);
 }
+
+#[test]
+fn an_older_owned_home_gains_idle_leasing_and_review_state() {
+    let data = crate::data::GameData::load();
+    let property = crate::model::Property::from_template(&data.properties[0]);
+    let owned = OwnedProperty::new(
+        property,
+        500_000,
+        20_000,
+        50_000,
+        450_000,
+        520_000,
+        ResearchLevel::StreetScan,
+        WalkawayStyle::Balanced,
+    );
+    let mut json = serde_json::to_value(owned).unwrap();
+    let object = json.as_object_mut().unwrap();
+    object.remove("leasing_weeks_remaining");
+    object.remove("next_rent_review_week");
+
+    let restored: OwnedProperty = serde_json::from_value(json).expect("legacy home should load");
+
+    assert_eq!(restored.leasing_weeks_remaining, 0);
+    assert_eq!(restored.next_rent_review_week, 0);
+}

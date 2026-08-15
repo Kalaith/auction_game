@@ -127,6 +127,33 @@ fn saved_auction_resumes_the_same_room_sequence() {
 }
 
 #[test]
+fn an_older_live_auction_gains_safe_defaults_for_rebuilt_room_state() {
+    let original = auction();
+    let mut json = serde_json::to_value(original).unwrap();
+    let object = json.as_object_mut().unwrap();
+    for field in [
+        "jump_bid_available",
+        "player_bid_count",
+        "on_market_announced",
+        "vendor_bid_used",
+        "last_room_read",
+        "sold_post_auction",
+        "post_auction_tested",
+        "has_started",
+        "rng_state",
+    ] {
+        object.remove(field);
+    }
+
+    let restored: Auction = serde_json::from_value(json).expect("legacy auction should load");
+
+    assert!(restored.jump_bid_available);
+    assert!(restored.has_started);
+    assert!(!restored.post_auction_tested);
+    assert_ne!(restored.rng_state, 0);
+}
+
+#[test]
 fn a_suspended_browser_frame_cannot_consume_the_room_clock() {
     let mut auction = auction();
     let before = auction.seconds_remaining;

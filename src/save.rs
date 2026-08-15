@@ -139,3 +139,6 @@ impl App {
 fn default_auction_registrations() -> u8 {
     WEEKLY_AUCTION_REGISTRATIONS
 }
+
+#[cfg(test)]
+mod tests;

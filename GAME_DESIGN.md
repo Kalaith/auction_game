@@ -43,6 +43,7 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - ASSERT is theatre with asymmetric consequences: it discourages rational buyers and can provoke emotional ones.
 - First-home buyers stretch near the final call, renovators stretch for damaged upside in emotional rooms, and ego bidders stretch when counter-bidding becomes personal; each exposes a distinct live tell while rational bidders keep their ceiling.
 - Each auction owns a serialized random stream, so saving and reloading cannot reroll rival reactions or auctioneer timing.
+- New auction, settlement, leasing, career, and rent-review fields use explicit defaults so pre-rebuild saves remain loadable.
 - A room read is earned by lowering the paddle; the observation becomes stale on the next bid, and better diligence makes it more precise.
 - A renovation is recommended only when its expected value exceeds its full quoted effect.
 - Known structural defects must be repaired before a tenant can be placed.
