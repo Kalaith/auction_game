@@ -1,4 +1,4 @@
-use crate::model::BidderMood;
+use crate::model::{AuctionTemperature, BidderMood};
 use crate::ui::*;
 use macroquad::prelude::*;
 
@@ -53,6 +53,15 @@ pub fn mood_color(mood: BidderMood) -> Color {
         BidderMood::Hesitating => WARNING,
         BidderMood::Stretching => NEGATIVE,
         BidderMood::Out => NEGATIVE,
+    }
+}
+
+pub fn temperature_color(temperature: AuctionTemperature) -> Color {
+    match temperature {
+        AuctionTemperature::QuietRoom => POSITIVE,
+        AuctionTemperature::SteadyInterest => crate::ui::BLUE,
+        AuctionTemperature::HeatingUp => WARNING,
+        AuctionTemperature::FomoSpiral | AuctionTemperature::FinalCall => NEGATIVE,
     }
 }
 

@@ -20,6 +20,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - Open in $10,000 rises, then bid in tighter $5,000 steps after the on-market call.
 - Negotiate a visible vendor counteroffer after a pass-in, or leave the private deal untouched.
 - Test the vendor once at the public-room price before deciding whether to meet that counteroffer.
+- See when the reserve is not yet met, and use full diligence to read a passed-in seller as flexible, negotiable, or firm without revealing their exact floor.
 - Build a season record that credits disciplined exits alongside purchases and profitable sales.
 - Close each season with the registrations deliberately passed up, final rent, realised sale profit, and auction record visible together.
 - Pay down individual property loans when freeing bank headroom matters more than keeping cash liquid.

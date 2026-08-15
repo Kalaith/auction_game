@@ -367,6 +367,8 @@ fn a_passed_in_buyer_can_test_a_flexible_vendor_once() {
     auction.status = Some(AuctionStatus::PassedIn);
     let tested_price = auction.current_bid;
 
+    assert_eq!(vendor_stance(&auction), VendorStance::Flexible);
+
     assert_eq!(
         test_vendor_at_passed_in_price(&mut auction),
         Some(PostAuctionTestResult::Accepted(tested_price))
@@ -381,6 +383,8 @@ fn a_rejected_passed_in_test_leaves_the_vendor_counter_available() {
     auction.property.buyer_demand = 80;
     auction.current_bid = auction.reserve_price - 30_000;
     auction.status = Some(AuctionStatus::PassedIn);
+
+    assert_eq!(vendor_stance(&auction), VendorStance::Firm);
 
     let counter = post_auction_offer(&auction).unwrap();
     assert_eq!(

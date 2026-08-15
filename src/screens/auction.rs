@@ -1,18 +1,19 @@
 use crate::app::App;
-use crate::model::{Auction, AuctionStatus, AuctionTemperature, BidderActor};
+use crate::model::{Auction, AuctionStatus, BidderActor};
 use crate::screens::auction_debrief::draw_purchase_debrief;
 use crate::screens::auction_lobby::{draw_auction_day_lobby, AuctionLobbyAction};
+use crate::screens::auction_property_panel::draw_auction_property_panel;
 use crate::screens::auction_widgets::{
-    bid_verdict, draw_heat_bar, guidance_color, money_color, mood_color,
+    bid_verdict, draw_heat_bar, guidance_color, money_color, mood_color, temperature_color,
 };
 use crate::screens::Screen;
 use crate::sim::auction_events::{
-    accept_post_auction_offer, post_auction_offer, test_vendor_at_passed_in_price,
+    accept_post_auction_offer, post_auction_offer, test_vendor_at_passed_in_price, vendor_stance,
     PostAuctionTestResult,
 };
 use crate::sim::auction_sim::{
     begin_auction_calls, hold_player_position, place_player_bid, place_player_jump_bid,
-    quick_resolve_auction, stop_player_bidding, AUCTION_DURATION_SECONDS,
+    quick_resolve_auction, stop_player_bidding,
 };
 use crate::sim::finance::{finance_snapshot, rental_underwrite, FinanceSnapshot};
 use crate::sim::research::estimate_reserve;
@@ -333,6 +334,22 @@ impl App {
                         crate::ui::BLUE
                     },
                 );
+                label_fit(
+                    if auction.player_research_level >= crate::model::ResearchLevel::FullDiligence {
+                        vendor_stance(auction).label()
+                    } else {
+                        "Seller flexibility is unclear without full diligence."
+                    },
+                    rect.x + 28.0,
+                    rect.y + 300.0,
+                    rect.w - 56.0,
+                    15,
+                    if auction.player_research_level >= crate::model::ResearchLevel::FullDiligence {
+                        POSITIVE
+                    } else {
+                        TEXT_DIM
+                    },
+                );
                 if button(
                     Rect::new(rect.x + 26.0, rect.y + rect.h - 64.0, 148.0, 44.0),
                     &if auction.post_auction_tested {
@@ -368,87 +385,6 @@ impl App {
             }
         }
         None
-    }
-}
-
-fn draw_auction_property_panel(
-    rect: Rect,
-    auction: &Auction,
-    reserve_estimate: i64,
-    cash: i64,
-    bank_room: i64,
-    margin: i64,
-    rental_cashflow: i64,
-) {
-    soft_panel(rect);
-    draw_house_art(
-        Rect::new(rect.x + 14.0, rect.y + 14.0, rect.w - 28.0, 154.0),
-        &auction.property,
-    );
-    label(
-        &auction.property.address,
-        rect.x + 16.0,
-        rect.y + 204.0,
-        22,
-        TEXT_BRIGHT,
-    );
-    label(
-        &auction.property.suburb,
-        rect.x + 16.0,
-        rect.y + 230.0,
-        17,
-        TEXT_DIM,
-    );
-    let rows = [
-        ("Reserve estimate", reserve_estimate),
-        ("Walk-away", auction.player_walkaway_price),
-        ("Cash to settle", cash),
-        ("Bank room", bank_room),
-        ("Margin after fees", margin),
-        ("Rental cashflow / wk", rental_cashflow),
-    ];
-    for (index, (title, value)) in rows.iter().enumerate() {
-        draw_value(
-            title,
-            &format_money(*value),
-            rect.x + 16.0,
-            rect.y + 276.0 + index as f32 * 34.0,
-            rect.w - 32.0,
-        );
-    }
-    let pressure = 100.0 - auction.seconds_remaining / AUCTION_DURATION_SECONDS * 100.0;
-    draw_meter(
-        if auction.has_started {
-            auction.temperature.label()
-        } else {
-            "Terms & Registration"
-        },
-        pressure as i32,
-        Rect::new(rect.x + 16.0, rect.y + rect.h - 58.0, rect.w - 32.0, 12.0),
-        if auction.has_started {
-            temperature_color(auction.temperature)
-        } else {
-            crate::ui::BLUE
-        },
-    );
-    label_fit(
-        if auction.has_started {
-            auction.temperature.description()
-        } else {
-            "The clock waits until you tap START AUCTION CALLS."
-        },
-        rect.x + 16.0,
-        rect.y + rect.h - 18.0,
-        rect.w - 32.0,
-        14,
-        TEXT_DIM,
-    );
-    if auction.on_market_announced {
-        draw_badge(
-            "ON MARKET",
-            Rect::new(rect.x + rect.w - 214.0, rect.y + 18.0, 100.0, 28.0),
-            POSITIVE,
-        );
     }
 }
 
@@ -787,14 +723,5 @@ fn short_log_line(text: &str) -> &str {
         &text[..34]
     } else {
         text
-    }
-}
-
-fn temperature_color(temperature: AuctionTemperature) -> Color {
-    match temperature {
-        AuctionTemperature::QuietRoom => POSITIVE,
-        AuctionTemperature::SteadyInterest => crate::ui::BLUE,
-        AuctionTemperature::HeatingUp => WARNING,
-        AuctionTemperature::FomoSpiral | AuctionTemperature::FinalCall => NEGATIVE,
     }
 }

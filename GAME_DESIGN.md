@@ -38,6 +38,7 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - One declared vendor bid may move the auction below reserve, but can never buy the property or put it on the market.
 - A pass-in moves to a private vendor counteroffer below reserve; accepting still requires finance and can still violate the player's walk-away.
 - Before meeting that counter, the player may test the vendor once at the passed-in price. Seller flexibility follows demand and disclosed risk, and a rejection leaves the counteroffer available.
+- Below reserve, the live room is explicitly NOT YET SELLING. Full diligence later classifies the passed-in seller as flexible, negotiable, or firm while the precise acceptance floor remains hidden.
 - A hammer win requires a 10% contract deposit plus separately visible acquisition costs; both are included in settlement cash and the deal remains unconditional.
 - ASSERT is theatre with asymmetric consequences: it discourages rational buyers and can provoke emotional ones.
 - First-home buyers stretch near the final call, renovators stretch for damaged upside in emotional rooms, and ego bidders stretch when counter-bidding becomes personal; each exposes a distinct live tell while rational bidders keep their ceiling.

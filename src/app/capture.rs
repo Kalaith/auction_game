@@ -167,6 +167,7 @@ impl App {
                         begin_auction_calls(auction);
                         auction.current_bid = auction.reserve_price - auction.bid_increment * 3;
                         auction.status = Some(AuctionStatus::PassedIn);
+                        auction.player_research_level = ResearchLevel::FullDiligence;
                     }
                 }
             }

@@ -11,8 +11,8 @@ use crate::sim::auction_bidders::{
 };
 #[cfg(test)]
 use crate::sim::auction_events::{
-    accept_post_auction_offer, post_auction_offer, test_vendor_at_passed_in_price,
-    PostAuctionTestResult,
+    accept_post_auction_offer, post_auction_offer, test_vendor_at_passed_in_price, vendor_stance,
+    PostAuctionTestResult, VendorStance,
 };
 use crate::sim::auction_events::{announce_on_market, place_vendor_bid, should_place_vendor_bid};
 use crate::sim::valuation::round_down_to_increment;

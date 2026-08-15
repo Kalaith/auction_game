@@ -78,6 +78,33 @@ pub enum PostAuctionTestResult {
     Rejected(i64),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum VendorStance {
+    Flexible,
+    Negotiable,
+    Firm,
+}
+
+impl VendorStance {
+    pub fn label(self) -> &'static str {
+        match self {
+            VendorStance::Flexible => "Flexible seller · a lower test has support",
+            VendorStance::Negotiable => "Negotiable seller · a modest test may work",
+            VendorStance::Firm => "Firm seller · a low test risks rejection",
+        }
+    }
+}
+
+pub fn vendor_stance(auction: &Auction) -> VendorStance {
+    if auction.property.hidden_defect_risk >= 0.55 || auction.property.buyer_demand <= 50 {
+        VendorStance::Flexible
+    } else if auction.property.buyer_demand <= 70 {
+        VendorStance::Negotiable
+    } else {
+        VendorStance::Firm
+    }
+}
+
 pub fn test_vendor_at_passed_in_price(auction: &mut Auction) -> Option<PostAuctionTestResult> {
     if auction.status != Some(AuctionStatus::PassedIn) || auction.post_auction_tested {
         return None;
@@ -111,13 +138,10 @@ pub fn test_vendor_at_passed_in_price(auction: &mut Auction) -> Option<PostAucti
 }
 
 fn vendor_acceptance_floor(auction: &Auction) -> i64 {
-    let concession =
-        if auction.property.hidden_defect_risk >= 0.55 || auction.property.buyer_demand <= 50 {
-            30_000
-        } else if auction.property.buyer_demand <= 70 {
-            20_000
-        } else {
-            10_000
-        };
+    let concession = match vendor_stance(auction) {
+        VendorStance::Flexible => 30_000,
+        VendorStance::Negotiable => 20_000,
+        VendorStance::Firm => 10_000,
+    };
     auction.reserve_price - concession
 }
