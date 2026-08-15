@@ -5,8 +5,8 @@ use crate::screens::auction_widgets::{
 };
 use crate::screens::Screen;
 use crate::sim::auction_sim::{
-    hold_player_position, place_player_bid, quick_resolve_auction, room_read, stop_player_bidding,
-    AUCTION_DURATION_SECONDS,
+    hold_player_position, place_player_bid, place_player_jump_bid, quick_resolve_auction,
+    room_read, stop_player_bidding, AUCTION_DURATION_SECONDS,
 };
 use crate::sim::finance::{finance_snapshot, FinanceSnapshot};
 use crate::sim::valuation::{cash_needed_to_settle, projected_purchase_margin};
@@ -15,6 +15,7 @@ use macroquad::prelude::*;
 
 enum AuctionUiAction {
     Bid,
+    JumpBid,
     Hold,
     WalkAway,
     QuickResolve,
@@ -32,10 +33,13 @@ impl App {
         let auction = auction.clone();
         let property = auction.property.clone();
         let next_bid = auction.next_bid();
+        let jump_bid = auction.jump_bid();
         let next_cash_needed = cash_needed_to_settle(next_bid);
         let next_cash_after = self.player.cash - next_cash_needed;
         let next_margin = projected_purchase_margin(&property, next_bid, self.market());
         let finance = finance_snapshot(&self.player, self.market(), next_bid);
+        let jump_finance = finance_snapshot(&self.player, self.market(), jump_bid);
+        let jump_margin = projected_purchase_margin(&property, jump_bid, self.market());
         let can_afford_next = finance.can_buy;
         let mut action = None;
 
@@ -60,6 +64,9 @@ impl App {
                 next_cash_after,
                 can_afford_next,
                 finance,
+                jump_bid,
+                jump_margin,
+                jump_finance,
             );
         } else if let Some(status) = auction.status.clone() {
             action = self.draw_auction_result(center, &auction, status);
@@ -70,6 +77,11 @@ impl App {
             Some(AuctionUiAction::Bid) => {
                 if let Some(auction) = self.current_auction.as_mut() {
                     place_player_bid(auction);
+                }
+            }
+            Some(AuctionUiAction::JumpBid) => {
+                if let Some(auction) = self.current_auction.as_mut() {
+                    self.status = place_player_jump_bid(auction);
                 }
             }
             Some(AuctionUiAction::Hold) => {
@@ -295,6 +307,9 @@ fn draw_live_decision_panel(
     cash_after: i64,
     can_afford_next: bool,
     finance: FinanceSnapshot,
+    jump_bid: i64,
+    jump_margin: i64,
+    jump_finance: FinanceSnapshot,
 ) -> Option<AuctionUiAction> {
     soft_panel(rect);
     let over_plan = next_bid > auction.player_walkaway_price;
@@ -379,16 +394,9 @@ fn draw_live_decision_panel(
         money_color(margin),
     );
 
-    let bid_note = if !finance.can_buy {
-        "Bank headroom is gone"
-    } else if over_plan {
-        "Breaks your walk-away price"
-    } else {
-        "Still within your plan"
-    };
     if button(
-        Rect::new(rect.x + 38.0, rect.y + 330.0, rect.w - 76.0, 66.0),
-        &format!("{verdict} {}", format_money(next_bid)),
+        Rect::new(rect.x + 38.0, rect.y + 330.0, 208.0, 66.0),
+        &format!("RAISE {}", format_money(next_bid)),
         auction.is_player_active && can_afford_next,
         if over_plan || !finance.can_buy {
             ButtonTone::Danger
@@ -398,19 +406,50 @@ fn draw_live_decision_panel(
     ) {
         return Some(AuctionUiAction::Bid);
     }
+    let jump_over_plan = jump_bid > auction.player_walkaway_price;
+    let jump_label = if auction.jump_bid_available {
+        format!("ASSERT {}", format_money(jump_bid))
+    } else {
+        "ASSERT USED".to_string()
+    };
+    if button(
+        Rect::new(rect.x + rect.w - 246.0, rect.y + 330.0, 208.0, 66.0),
+        &jump_label,
+        auction.is_player_active && auction.jump_bid_available && jump_finance.can_buy,
+        if jump_over_plan {
+            ButtonTone::Danger
+        } else {
+            ButtonTone::Secondary
+        },
+    ) {
+        return Some(AuctionUiAction::JumpBid);
+    }
     label(
-        bid_note,
-        rect.x + 54.0,
-        rect.y + 420.0,
-        17,
+        "Raise one step; reveal little.",
+        rect.x + 45.0,
+        rect.y + 418.0,
+        15,
         guidance_color(margin, cash_after, next_bid, auction.player_walkaway_price),
     );
+    let jump_note = if auction.jump_bid_available {
+        format!("Jump two steps; margin {}.", format_money(jump_margin))
+    } else {
+        "One assertive jump per auction.".to_string()
+    };
     label_fit(
+        &jump_note,
+        rect.x + rect.w - 238.0,
+        rect.y + 418.0,
+        200.0,
+        15,
+        if jump_over_plan { NEGATIVE } else { WARNING },
+    );
+    draw_wrapped_text(
         &format!("Room read: {}", room_read(auction)),
         rect.x + 54.0,
-        rect.y + 440.0,
+        rect.y + 444.0,
         rect.w - 108.0,
-        15,
+        14,
         TEXT_DIM,
     );
 
@@ -418,12 +457,12 @@ fn draw_live_decision_panel(
         label(
             "You are out. Let the room finish without waiting.",
             rect.x + 54.0,
-            rect.y + 450.0,
+            rect.y + 474.0,
             17,
             TEXT_DIM,
         );
         if button(
-            Rect::new(rect.x + 38.0, rect.y + 476.0, rect.w - 76.0, 48.0),
+            Rect::new(rect.x + 38.0, rect.y + 498.0, rect.w - 76.0, 48.0),
             "Quick Resolve",
             true,
             ButtonTone::Primary,
@@ -435,7 +474,7 @@ fn draw_live_decision_panel(
 
     if button(
         Rect::new(rect.x + 38.0, rect.y + 468.0, 205.0, 48.0),
-        "Hold Position",
+        "Wait & Read Room",
         auction.is_player_active,
         ButtonTone::Secondary,
     ) {
@@ -467,32 +506,33 @@ fn draw_bidder_panel(rect: Rect, auction: &Auction) {
         TEXT_BRIGHT,
     );
     for (index, bidder) in auction.bidders.iter().enumerate() {
-        let y = rect.y + 76.0 + index as f32 * 66.0;
-        label(
-            short_bidder_name(&bidder.name),
+        let y = rect.y + 76.0 + index as f32 * 82.0;
+        label_fit(
+            &bidder.name,
             rect.x + 18.0,
             y,
+            rect.w - 126.0,
             18,
             TEXT_BRIGHT,
         );
+        let is_leading = auction.last_bidder == Some(BidderActor::Npc(index));
         label_fit(
             &format!("{} | {}", bidder.bidder_type.label(), bidder.rhythm),
             rect.x + 18.0,
             y + 22.0,
-            rect.w - 146.0,
-            16,
+            rect.w - 36.0,
+            15,
             TEXT_DIM,
         );
-        let is_leading = auction.last_bidder == Some(BidderActor::Npc(index));
         label(
             if is_leading {
                 "Leading"
             } else {
                 bidder.mood.label()
             },
-            rect.x + 126.0,
-            y + 22.0,
-            16,
+            rect.x + rect.w - 92.0,
+            y,
+            15,
             if is_leading {
                 POSITIVE
             } else {
@@ -500,23 +540,20 @@ fn draw_bidder_panel(rect: Rect, auction: &Auction) {
             },
         );
         draw_heat_bar(
-            Rect::new(rect.x + rect.w - 104.0, y - 7.0, 76.0, 8.0),
+            Rect::new(rect.x + 18.0, y + 57.0, rect.w - 36.0, 7.0),
             bidder.heat,
         );
         label_fit(
-            &format!(
-                "Tell: {} Prefers: {} Weakness: {} Danger: {}",
-                bidder.tell, bidder.preference, bidder.weakness, bidder.danger
-            ),
+            &format!("Tell: {}", bidder.tell),
             rect.x + 18.0,
             y + 44.0,
             rect.w - 36.0,
-            14,
+            13,
             mood_color(bidder.mood),
         );
     }
 
-    label("Bid Log", rect.x + 18.0, rect.y + 318.0, 22, TEXT_BRIGHT);
+    label("Auctioneer", rect.x + 18.0, rect.y + 330.0, 22, TEXT_BRIGHT);
     for (index, entry) in auction.log.iter().rev().take(4).enumerate() {
         let text = format!(
             "{:>2}s  {}",
@@ -526,19 +563,11 @@ fn draw_bidder_panel(rect: Rect, auction: &Auction) {
         label_fit(
             &text,
             rect.x + 18.0,
-            rect.y + 354.0 + index as f32 * 28.0,
+            rect.y + 366.0 + index as f32 * 28.0,
             rect.w - 36.0,
             15,
             TEXT_DIM,
         );
-    }
-}
-
-fn short_bidder_name(name: &str) -> &str {
-    if name == "Kestrel Developments" {
-        "Kestrel Develop..."
-    } else {
-        name
     }
 }
 

@@ -78,6 +78,8 @@ pub fn create_auction(
         walkaway_style,
         temperature: initial_temperature(property, market),
         market_heat: market_heat(property, market),
+        jump_bid_available: true,
+        player_bid_count: 0,
     }
 }
 
@@ -145,6 +147,7 @@ pub fn place_player_bid(auction: &mut Auction) {
     let next_bid = auction.next_bid();
     auction.current_bid = next_bid;
     auction.last_bidder = Some(BidderActor::Player);
+    auction.player_bid_count += 1;
     extend_if_needed(auction);
     auction.temperature = auction_temperature(auction);
 
@@ -162,6 +165,66 @@ pub fn place_player_bid(auction: &mut Auction) {
             format!("You bid {}.", crate::ui::format_money(next_bid)),
         );
     }
+}
+
+pub fn place_player_jump_bid(auction: &mut Auction) -> String {
+    if !auction.is_running() || !auction.is_player_active || !auction.jump_bid_available {
+        return "The assertive jump is no longer available.".to_string();
+    }
+
+    let jump_bid = auction.jump_bid();
+    auction.current_bid = jump_bid;
+    auction.last_bidder = Some(BidderActor::Player);
+    auction.jump_bid_available = false;
+    auction.player_bid_count += 1;
+    extend_if_needed(auction);
+
+    let mut rattled = 0;
+    let mut provoked = 0;
+    for bidder in &mut auction.bidders {
+        if !bidder.active {
+            continue;
+        }
+        match bidder.bidder_type {
+            BidderType::Investor | BidderType::BargainHunter => {
+                bidder.max_price -= auction.bid_increment;
+                bidder.reaction_timer += 1.4;
+                bidder.heat = (bidder.heat - 18).max(10);
+                bidder.mood = BidderMood::Hesitating;
+                bidder.tell = "The sudden jump forces a fresh calculation.".to_string();
+                rattled += 1;
+            }
+            BidderType::FirstHomeBuyer | BidderType::EgoBidder => {
+                bidder.max_price += auction.bid_increment;
+                bidder.reaction_timer = bidder.reaction_timer.min(0.7);
+                bidder.heat = (bidder.heat + 18).min(100);
+                bidder.mood = BidderMood::Stretching;
+                bidder.tell = "The jump feels like a challenge.".to_string();
+                provoked += 1;
+            }
+            BidderType::Renovator => {
+                bidder.reaction_timer += 0.8;
+                bidder.heat = (bidder.heat - 10).max(15);
+                bidder.tell = "Rechecks the repair margin after your jump.".to_string();
+                rattled += 1;
+            }
+            BidderType::Developer => {
+                bidder.reaction_timer = bidder.reaction_timer.min(1.0);
+                bidder.tell = "Ignores the theatre and checks the land value.".to_string();
+            }
+        }
+    }
+    auction.temperature = auction_temperature(auction);
+
+    let effect = match (rattled, provoked) {
+        (0, 0) => "The room barely reacts.",
+        (_, 0) => "The jump rattles the room.",
+        (0, _) => "The jump provokes the emotional bidders.",
+        _ => "Some bidders recoil; emotional buyers take it personally.",
+    };
+    let message = format!("You assert {}. {effect}", crate::ui::format_money(jump_bid));
+    push_log(auction, message.clone());
+    message
 }
 
 pub fn stop_player_bidding(auction: &mut Auction) {
@@ -185,7 +248,7 @@ pub fn hold_player_position(auction: &mut Auction) -> String {
     }
 
     let read = room_read(auction);
-    push_log(auction, format!("You hold. {read}"));
+    push_log(auction, format!("You wait with the paddle down. {read}"));
     auction.call_timer = auction.call_timer.min(0.45);
     for bidder in &mut auction.bidders {
         if bidder.active {
@@ -194,6 +257,9 @@ pub fn hold_player_position(auction: &mut Auction) -> String {
     }
     read
 }
+
+#[cfg(test)]
+mod tests;
 
 pub fn room_read(auction: &Auction) -> String {
     let next_bid = auction.next_bid();

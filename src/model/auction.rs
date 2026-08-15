@@ -77,6 +77,10 @@ pub struct Auction {
     pub walkaway_style: WalkawayStyle,
     pub temperature: AuctionTemperature,
     pub market_heat: i32,
+    #[serde(default = "jump_available_default")]
+    pub jump_bid_available: bool,
+    #[serde(default)]
+    pub player_bid_count: u8,
 }
 
 impl Auction {
@@ -87,4 +91,12 @@ impl Auction {
     pub fn next_bid(&self) -> i64 {
         self.current_bid + self.bid_increment
     }
+
+    pub fn jump_bid(&self) -> i64 {
+        self.current_bid + self.bid_increment * 2
+    }
+}
+
+fn jump_available_default() -> bool {
+    true
 }

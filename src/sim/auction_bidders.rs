@@ -163,7 +163,7 @@ pub(super) fn bidder_ceiling(
 
     let market_value = market_adjusted_value(property, market);
     round_down_to_increment(
-        (market_value as f32 * (0.96 + modifier)) as i64,
+        (market_value as f32 * (0.92 + modifier)) as i64,
         BID_INCREMENT,
     )
     .max(property.guide_price)
