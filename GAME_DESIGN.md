@@ -28,6 +28,8 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - The guide is advertising, not valuation.
 - Research buys narrower uncertainty, not a guaranteed answer.
 - A walk-away is a commitment device, not a hard lock.
+- The vendor's true reserve stays hidden; research provides an estimate and the auctioneer announces when bidding crosses the real line.
+- One declared vendor bid may move the auction below reserve, but can never buy the property or put it on the market.
 - ASSERT is theatre with asymmetric consequences: it discourages rational buyers and can provoke emotional ones.
 - A renovation is recommended only when its expected value exceeds its full quoted effect.
 - Known structural defects must be repaired before a tenant can be placed.

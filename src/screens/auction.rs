@@ -9,6 +9,7 @@ use crate::sim::auction_sim::{
     room_read, stop_player_bidding, AUCTION_DURATION_SECONDS,
 };
 use crate::sim::finance::{finance_snapshot, FinanceSnapshot};
+use crate::sim::research::estimate_reserve;
 use crate::sim::valuation::{cash_needed_to_settle, projected_purchase_margin};
 use crate::ui::*;
 use macroquad::prelude::*;
@@ -40,6 +41,12 @@ impl App {
         let finance = finance_snapshot(&self.player, self.market(), next_bid);
         let jump_finance = finance_snapshot(&self.player, self.market(), jump_bid);
         let jump_margin = projected_purchase_margin(&property, jump_bid, self.market());
+        let reserve_estimate = estimate_reserve(
+            &property,
+            self.market(),
+            auction.player_research_level,
+            self.player.reputation,
+        );
         let can_afford_next = finance.can_buy;
         let mut action = None;
 
@@ -51,6 +58,7 @@ impl App {
         draw_auction_property_panel(
             left,
             &auction,
+            reserve_estimate,
             next_cash_needed,
             finance.headroom_after,
             next_margin,
@@ -244,6 +252,7 @@ impl App {
 fn draw_auction_property_panel(
     rect: Rect,
     auction: &Auction,
+    reserve_estimate: i64,
     cash: i64,
     bank_room: i64,
     margin: i64,
@@ -268,7 +277,7 @@ fn draw_auction_property_panel(
         TEXT_DIM,
     );
     let rows = [
-        ("Reserve", auction.reserve_price),
+        ("Reserve estimate", reserve_estimate),
         ("Walk-away", auction.player_walkaway_price),
         ("Cash to settle", cash),
         ("Bank room", bank_room),
@@ -297,6 +306,13 @@ fn draw_auction_property_panel(
         14,
         TEXT_DIM,
     );
+    if auction.on_market_announced {
+        draw_badge(
+            "ON MARKET",
+            Rect::new(rect.x + rect.w - 214.0, rect.y + 18.0, 100.0, 28.0),
+            POSITIVE,
+        );
+    }
 }
 
 fn draw_live_decision_panel(

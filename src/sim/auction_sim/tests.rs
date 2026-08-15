@@ -137,3 +137,32 @@ fn rational_bidder_does_not_gain_an_emotional_ceiling() {
 
     assert_eq!(bidder_effective_ceiling(&auction, 0), investor_limit);
 }
+
+#[test]
+fn vendor_bid_is_declared_once_and_stays_below_reserve() {
+    let mut auction = auction();
+    auction.seconds_remaining = 40.0;
+
+    assert!(should_place_vendor_bid(&auction));
+    place_vendor_bid(&mut auction);
+
+    assert!(auction.vendor_bid_used);
+    assert_eq!(auction.last_bidder, Some(BidderActor::Vendor));
+    assert!(auction.current_bid < auction.reserve_price);
+    assert!(!should_place_vendor_bid(&auction));
+}
+
+#[test]
+fn crossing_the_true_reserve_announces_on_market_without_revealing_it_early() {
+    let mut auction = auction();
+    auction.current_bid = auction.reserve_price - auction.bid_increment;
+    assert!(!auction.on_market_announced);
+
+    place_player_bid(&mut auction);
+
+    assert!(auction.on_market_announced);
+    assert!(auction
+        .log
+        .iter()
+        .any(|entry| entry.text.contains("on the market")));
+}

@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 pub enum BidderActor {
     Player,
     Npc(usize),
+    Vendor,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
@@ -81,6 +82,10 @@ pub struct Auction {
     pub jump_bid_available: bool,
     #[serde(default)]
     pub player_bid_count: u8,
+    #[serde(default)]
+    pub on_market_announced: bool,
+    #[serde(default)]
+    pub vendor_bid_used: bool,
 }
 
 impl Auction {

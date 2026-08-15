@@ -1,6 +1,7 @@
 use super::App;
 use crate::model::{OwnedProperty, Property, ResearchLevel, WalkawayStyle};
 use crate::screens::Screen;
+use crate::sim::auction_sim::place_player_bid;
 use crate::sim::rental::weekly_rent_for;
 use crate::sim::valuation::{deposit, purchase_fees};
 
@@ -21,6 +22,16 @@ impl App {
                 self.start_new_game();
                 if let Some(property) = self.available_properties.first().cloned() {
                     self.start_auction(property.id);
+                }
+            }
+            "auction_on_market" => {
+                self.start_new_game();
+                if let Some(property) = self.available_properties.first().cloned() {
+                    self.start_auction(property.id);
+                    if let Some(auction) = self.current_auction.as_mut() {
+                        auction.current_bid = auction.reserve_price - auction.bid_increment;
+                        place_player_bid(auction);
+                    }
                 }
             }
             "portfolio" => {

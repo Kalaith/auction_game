@@ -1,4 +1,5 @@
 mod auction_bidders;
+mod auction_events;
 pub mod auction_sim;
 pub mod campaign;
 pub mod finance;

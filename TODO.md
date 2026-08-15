@@ -8,7 +8,6 @@
 
 ## Auction depth
 
-- Add vendor bids and on-market announcements as distinct auctioneer events.
 - Let full diligence reveal one rival likely to attend the auction.
 - Add deterministic coverage for NPC-to-NPC hammer outcomes and all emotional stretch archetypes.
 

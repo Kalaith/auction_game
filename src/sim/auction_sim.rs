@@ -9,6 +9,7 @@ use crate::sim::auction_bidders::{
     overbid_tendency, pressure_tolerance, stretch_increments, table_clue, tell_for,
     temperature_bid_modifier, BID_INCREMENT,
 };
+use crate::sim::auction_events::{announce_on_market, place_vendor_bid, should_place_vendor_bid};
 use crate::sim::valuation::round_down_to_increment;
 use macroquad_toolkit::rng;
 
@@ -80,6 +81,8 @@ pub fn create_auction(
         market_heat: market_heat(property, market),
         jump_bid_available: true,
         player_bid_count: 0,
+        on_market_announced: false,
+        vendor_bid_used: false,
     }
 }
 
@@ -93,8 +96,12 @@ pub fn update_auction(auction: &mut Auction, dt: f32) {
     auction.call_timer -= dt;
 
     if auction.call_timer <= 0.0 {
-        let line = auctioneer_line(auction);
-        push_log(auction, line);
+        if should_place_vendor_bid(auction) {
+            place_vendor_bid(auction);
+        } else {
+            let line = auctioneer_line(auction);
+            push_log(auction, line);
+        }
         auction.call_timer = rng::gen_range(1.6, 3.0);
     }
 
@@ -165,6 +172,7 @@ pub fn place_player_bid(auction: &mut Auction) {
             format!("You bid {}.", crate::ui::format_money(next_bid)),
         );
     }
+    announce_on_market(auction);
 }
 
 pub fn place_player_jump_bid(auction: &mut Auction) -> String {
@@ -224,6 +232,7 @@ pub fn place_player_jump_bid(auction: &mut Auction) -> String {
     };
     let message = format!("You assert {}. {effect}", crate::ui::format_money(jump_bid));
     push_log(auction, message.clone());
+    announce_on_market(auction);
     message
 }
 
@@ -365,6 +374,7 @@ fn place_npc_bid(auction: &mut Auction, index: usize) {
         auction,
         format!("{name} {action} {}.", crate::ui::format_money(next_bid)),
     );
+    announce_on_market(auction);
 }
 
 fn quick_resolve_bidder(auction: &mut Auction) -> Option<usize> {
@@ -434,6 +444,10 @@ fn finish_auction(auction: &mut Auction) {
                 ),
             );
         }
+        Some(BidderActor::Vendor) => {
+            auction.status = Some(AuctionStatus::PassedIn);
+            push_log(auction, "Auction passes in on the vendor bid.".to_string());
+        }
         None => {}
     }
 }
@@ -457,7 +471,7 @@ fn extend_if_needed(auction: &mut Auction) {
     }
 }
 
-fn push_log(auction: &mut Auction, text: String) {
+pub(super) fn push_log(auction: &mut Auction, text: String) {
     auction.log.push(BidLog {
         text,
         seconds_remaining: auction.seconds_remaining,
@@ -482,6 +496,8 @@ fn auctioneer_line(auction: &Auction) -> String {
         )
     } else if auction.current_bid < auction.reserve_price {
         "Still looking for a bid that meets reserve.".to_string()
+    } else if auction.on_market_announced {
+        "We are selling. The next silence can own the home.".to_string()
     } else if auction.temperature == AuctionTemperature::FomoSpiral {
         "The room is chasing the room now, not the house.".to_string()
     } else if auction.last_bidder == Some(BidderActor::Player) {
