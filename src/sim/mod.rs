@@ -1,3 +1,4 @@
+mod auction_behavior;
 mod auction_bidders;
 pub(crate) mod auction_events;
 pub mod auction_sim;
