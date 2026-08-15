@@ -86,6 +86,7 @@ pub fn create_auction(
         on_market_announced: false,
         vendor_bid_used: false,
         last_room_read: None,
+        sold_post_auction: false,
     }
 }
 

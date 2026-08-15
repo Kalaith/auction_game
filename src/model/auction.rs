@@ -88,6 +88,8 @@ pub struct Auction {
     pub vendor_bid_used: bool,
     #[serde(default)]
     pub last_room_read: Option<String>,
+    #[serde(default)]
+    pub sold_post_auction: bool,
 }
 
 impl Auction {

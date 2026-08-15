@@ -338,6 +338,7 @@ impl App {
             self.research_level(property.id),
             self.walkaway_style,
         ));
+        self.player.career.auctions_attended += 1;
         self.auction_registrations -= 1;
         self.auctioned_property_ids.push(property.id);
         self.available_properties
@@ -386,6 +387,10 @@ impl App {
         );
         self.purchase_debrief = Some(debrief);
         self.player.properties.push(owned);
+        self.player.career.homes_bought += 1;
+        if auction.sold_post_auction {
+            self.player.career.post_auction_buys += 1;
+        }
         self.portfolio_index = self.player.properties.len() - 1;
         self.available_properties
             .retain(|property| property.id != auction.property.id);
@@ -481,6 +486,8 @@ impl App {
             self.player.debt -= owned.debt;
             self.player.reputation += result.reputation_delta;
             self.player.properties.remove(index);
+            self.player.career.homes_sold += 1;
+            self.player.career.realized_profit += result.profit;
             self.portfolio_index = self
                 .portfolio_index
                 .min(self.player.properties.len().saturating_sub(1));

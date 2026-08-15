@@ -13,6 +13,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - Tap WAIT & READ ROOM to earn a current observation; the next bid makes that read stale.
 - Hear a legal vendor bid below the hidden reserve and the auctioneer's decisive on-market call.
 - Negotiate a visible vendor counteroffer after a pass-in, or leave the private deal untouched.
+- Build a season record that credits disciplined exits alongside purchases and profitable sales.
 - Renovate, place or end tenancies, collect rent, handle scheduled maintenance, hold, or sell purchased properties.
 - Track every property, cash, debt, rent, weekly cashflow, fees, repairs, and net worth.
 

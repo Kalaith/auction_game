@@ -9,6 +9,8 @@ pub struct Player {
     pub debt: i64,
     pub properties: Vec<OwnedProperty>,
     pub reputation: i32,
+    #[serde(default)]
+    pub career: CareerRecord,
 }
 
 impl Player {
@@ -18,8 +20,19 @@ impl Player {
             debt: 0,
             properties: Vec::new(),
             reputation: 0,
+            career: CareerRecord::default(),
         }
     }
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct CareerRecord {
+    pub auctions_attended: u32,
+    pub homes_bought: u32,
+    pub disciplined_walkaways: u32,
+    pub post_auction_buys: u32,
+    pub homes_sold: u32,
+    pub realized_profit: i64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -116,3 +129,6 @@ impl OwnedProperty {
         self.rent_received - self.operating_spend
     }
 }
+
+#[cfg(test)]
+mod tests;

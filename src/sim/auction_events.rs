@@ -57,6 +57,7 @@ pub fn accept_post_auction_offer(auction: &mut Auction) -> bool {
     auction.current_bid = offer;
     auction.last_bidder = Some(BidderActor::Player);
     auction.status = Some(AuctionStatus::SoldToPlayer);
+    auction.sold_post_auction = true;
     push_log(
         auction,
         format!(

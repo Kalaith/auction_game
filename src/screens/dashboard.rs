@@ -32,7 +32,12 @@ impl App {
             TEXT_BRIGHT,
         );
         label(
-            "Choose the auction worth your attention.",
+            &format!(
+                "Season: {} attended  |  {} bought  |  {} disciplined exits",
+                self.player.career.auctions_attended,
+                self.player.career.homes_bought,
+                self.player.career.disciplined_walkaways
+            ),
             margin + 330.0,
             top + 288.0,
             16,
@@ -150,6 +155,21 @@ impl App {
             panel.y + 204.0,
             18,
             TEXT,
+        );
+        label(
+            &format!(
+                "Auction record: {} attended  |  {} bought ({} after pass-in)  |  {} disciplined exits  |  {} sold  |  realized {}",
+                self.player.career.auctions_attended,
+                self.player.career.homes_bought,
+                self.player.career.post_auction_buys,
+                self.player.career.disciplined_walkaways,
+                self.player.career.homes_sold,
+                signed_money(self.player.career.realized_profit)
+            ),
+            panel.x + 24.0,
+            panel.y + 238.0,
+            15,
+            TEXT_DIM,
         );
 
         if button(
@@ -269,6 +289,14 @@ impl App {
             14,
             TEXT_DIM,
         );
+    }
+}
+
+fn signed_money(amount: i64) -> String {
+    if amount >= 0 {
+        format!("+{}", format_money(amount))
+    } else {
+        format!("-{}", format_money(amount.abs()))
     }
 }
 

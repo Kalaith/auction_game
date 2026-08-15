@@ -127,6 +127,7 @@ impl App {
                         && auction.current_bid > auction.player_walkaway_price
                     {
                         self.player.reputation += 1;
+                        self.player.career.disciplined_walkaways += 1;
                         self.status =
                             "Discipline reputation +1 for letting an overheated room win."
                                 .to_string();
