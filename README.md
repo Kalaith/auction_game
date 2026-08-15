@@ -35,6 +35,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - Translate a hammer win into a settlement ledger showing the 10% deposit, new loan, rent appraisal, and leveraged weekly cashflow before purchase settlement.
 - Diagnose every owned home's true weekly result after its rent, management, loan interest, property costs, and maintenance impact.
 - Handle scheduled eight-week rent reviews: renew safely, or ask for the current market rent and risk a vacancy in a weak tenant market.
+- Carry completed reviews and review-created vacancies into the persistent season ledger and final portfolio debrief.
 - Preserve a safe cash buffer that grows by $8,000 per portfolio door; auction guidance warns when the next bid leaves too little resilience.
 
 ## Goal

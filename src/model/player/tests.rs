@@ -8,7 +8,19 @@ fn a_new_investor_starts_with_an_empty_career_record() {
     assert_eq!(player.career.homes_bought, 0);
     assert_eq!(player.career.realized_profit, 0);
     assert_eq!(player.career.unused_registrations, 0);
+    assert_eq!(player.career.rent_reviews_completed, 0);
+    assert_eq!(player.career.review_vacancies, 0);
     assert!(player.rival_notebook.is_empty());
+}
+
+#[test]
+fn older_career_ledgers_gain_empty_tenancy_outcomes() {
+    let career: CareerRecord = serde_json::from_str(r#"{"auctions_attended": 4}"#)
+        .expect("older career record should remain readable");
+
+    assert_eq!(career.auctions_attended, 4);
+    assert_eq!(career.rent_reviews_completed, 0);
+    assert_eq!(career.review_vacancies, 0);
 }
 
 #[test]

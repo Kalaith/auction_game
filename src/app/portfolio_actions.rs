@@ -109,23 +109,29 @@ impl App {
             return;
         };
         let address = owned.property.address.clone();
-        self.status = match resolve_rent_review(owned, &market, test_market) {
-            Some(RentReviewOutcome::Renewed(rent)) => format!(
+        let Some(outcome) = resolve_rent_review(owned, &market, test_market) else {
+            return;
+        };
+        self.player.career.rent_reviews_completed += 1;
+        if matches!(outcome, RentReviewOutcome::Vacated(_)) {
+            self.player.career.review_vacancies += 1;
+        }
+        self.status = match outcome {
+            RentReviewOutcome::Renewed(rent) => format!(
                 "{} renewed at {} per week for another eight weeks.",
                 address,
                 format_money(rent)
             ),
-            Some(RentReviewOutcome::Raised(rent)) => format!(
+            RentReviewOutcome::Raised(rent) => format!(
                 "The tenant accepted {} per week at {}. The higher rent is now contracted.",
                 format_money(rent),
                 address
             ),
-            Some(RentReviewOutcome::Vacated(ask)) => format!(
+            RentReviewOutcome::Vacated(ask) => format!(
                 "The tenant rejected {} per week at {} and left. Advertise again to restore rent.",
                 format_money(ask),
                 address
             ),
-            None => return,
         };
         self.refresh_campaign_outcome();
     }

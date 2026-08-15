@@ -40,10 +40,11 @@ impl App {
         );
         label(
             &format!(
-                "Season: {} attended  |  {} bought  |  {} disciplined exits",
+                "Season: {} attended  |  {} bought  |  {} disciplined exits  |  {} rent reviews",
                 self.player.career.auctions_attended,
                 self.player.career.homes_bought,
-                self.player.career.disciplined_walkaways
+                self.player.career.disciplined_walkaways,
+                self.player.career.rent_reviews_completed
             ),
             margin + 330.0,
             top + 288.0,
@@ -192,9 +193,11 @@ impl App {
         );
         label(
             &format!(
-                "Portfolio exits: {} sold  |  realized {}  |  final rent {} / week",
+                "Portfolio: {} sold  |  realized {}  |  {} rent reviews ({} vacancies)  |  final rent {} / week",
                 self.player.career.homes_sold,
                 signed_money(self.player.career.realized_profit),
+                self.player.career.rent_reviews_completed,
+                self.player.career.review_vacancies,
                 format_money(rental.gross_rent)
             ),
             panel.x + 24.0,

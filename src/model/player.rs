@@ -29,6 +29,7 @@ impl Player {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(default)]
 pub struct CareerRecord {
     pub auctions_attended: u32,
     pub homes_bought: u32,
@@ -38,6 +39,8 @@ pub struct CareerRecord {
     pub realized_profit: i64,
     #[serde(default)]
     pub unused_registrations: u32,
+    pub rent_reviews_completed: u32,
+    pub review_vacancies: u32,
 }
 
 impl CareerRecord {
