@@ -6,6 +6,7 @@ use crate::screens::Screen;
 use crate::sim::auction_sim::{begin_auction_calls, hold_player_position, place_player_bid};
 use crate::sim::maintenance::{next_maintenance_week, trigger_due_maintenance};
 use crate::sim::rental::weekly_rent_for_owned;
+use crate::sim::sale_sim::{simulate_sale, MarketingPlan, ReserveChoice};
 use crate::sim::valuation::{deposit, purchase_fees};
 
 impl App {
@@ -95,6 +96,21 @@ impl App {
                 self.screen = Screen::Portfolio;
                 self.status = "A maintenance check found an issue. Repair it to restore full rent."
                     .to_string();
+            }
+            "sale_result" => {
+                self.start_new_game();
+                self.seed_portfolio_capture();
+                if let Some(owned) = self.player.properties.first().cloned() {
+                    self.sale_result = Some(simulate_sale(
+                        &owned,
+                        self.market(),
+                        ReserveChoice::Conservative,
+                        MarketingPlan::Standard,
+                    ));
+                    self.screen = Screen::SaleResult;
+                    self.status = "Sale settled. Read how much capital returned to the portfolio."
+                        .to_string();
+                }
             }
             "conclusion" => {
                 self.start_new_game();

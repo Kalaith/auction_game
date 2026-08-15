@@ -70,6 +70,10 @@ pub struct SaleResult {
     pub demand_score: i32,
     pub total_costs: i64,
     pub selling_fees: i64,
+    #[serde(default)]
+    pub debt_repaid: i64,
+    #[serde(default)]
+    pub settlement_release: i64,
     pub profit: i64,
     pub purchase_discipline: String,
     pub research_quality: String,
@@ -112,6 +116,8 @@ pub fn simulate_sale(
     };
 
     let selling_fees = sale_price.map(sale_fees).unwrap_or(0);
+    let debt_repaid = sale_price.map_or(0, |_| owned.debt);
+    let settlement_release = sale_price.map_or(0, |price| price - selling_fees - owned.debt);
     let marketing_cost = marketing_plan.cost();
     let total_costs = owned.purchase_price
         + owned.purchase_fees
@@ -147,6 +153,8 @@ pub fn simulate_sale(
         demand_score: demand_score.round() as i32,
         total_costs,
         selling_fees,
+        debt_repaid,
+        settlement_release,
         profit,
         purchase_discipline,
         research_quality,

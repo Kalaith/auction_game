@@ -10,91 +10,106 @@ impl App {
             return;
         };
 
-        let rect = Rect::new(120.0, 86.0, ui_width() - 240.0, ui_height() - 126.0);
+        let rect = Rect::new(70.0, 86.0, ui_width() - 140.0, ui_height() - 142.0);
         soft_panel(rect);
-        label("Sale Result", rect.x + 28.0, rect.y + 44.0, 31, TEXT_BRIGHT);
+        let sold = result.sale_price.is_some();
+        label(
+            if sold {
+                "SOLD UNDER THE HAMMER"
+            } else {
+                "PASSED IN"
+            },
+            rect.x + 30.0,
+            rect.y + 28.0,
+            15,
+            if sold { POSITIVE } else { WARNING },
+        );
+        label(
+            if sold {
+                "Sale Settled"
+            } else {
+                "Reserve Protected"
+            },
+            rect.x + 28.0,
+            rect.y + 64.0,
+            32,
+            TEXT_BRIGHT,
+        );
         label(
             &result.property_address,
             rect.x + 30.0,
-            rect.y + 76.0,
+            rect.y + 92.0,
             19,
             TEXT_DIM,
         );
-        label(
-            &format!(
-                "{} reserve at {} | {} campaign | {} bidders",
-                result.reserve_choice.label(),
-                format_money(result.reserve_price),
-                result.marketing_plan.label(),
-                result.bidder_count
+        let stat_y = rect.y + 116.0;
+        let stat_gap = 14.0;
+        let stat_w = (rect.w - 60.0 - stat_gap * 2.0) / 3.0;
+        let sale_value = result.sale_price.unwrap_or(result.highest_bid);
+        let stats = [
+            (
+                if sold { "Sale Price" } else { "Highest Bid" },
+                format_money(sale_value),
+                format!("Reserve {}", format_money(result.reserve_price)),
+                if sold { ACCENT } else { WARNING },
             ),
-            rect.x + 30.0,
-            rect.y + 98.0,
-            15,
-            TEXT_DIM,
-        );
-        label(
-            &format!(
-                "Highest bid {} | Demand {} / 100 | Cost base {}",
-                format_money(result.highest_bid),
-                result.demand_score,
-                format_money(result.total_costs)
+            (
+                "Settlement Release",
+                format_money(result.settlement_release),
+                if sold {
+                    format!("After {} loan + fees", format_money(result.debt_repaid))
+                } else {
+                    "No debt cleared".to_string()
+                },
+                if sold { POSITIVE } else { TEXT_DIM },
             ),
-            rect.x + 30.0,
-            rect.y + 118.0,
-            15,
-            TEXT_DIM,
-        );
-
-        let sold_text = result
-            .sale_price
-            .map(|price| format!("Sold for {}", format_money(price)))
-            .unwrap_or_else(|| "Passed in below reserve".to_string());
-        label(
-            &sold_text,
-            rect.x + 30.0,
-            rect.y + 148.0,
-            35,
-            if result.sale_price.is_some() {
-                ACCENT
-            } else {
-                WARNING
-            },
-        );
-        label(
-            &format!("Result {}", format_money(result.profit)),
-            rect.x + 30.0,
-            rect.y + 198.0,
-            42,
-            if result.profit >= 0 {
-                POSITIVE
-            } else {
-                NEGATIVE
-            },
-        );
-        let over_walkaway = (result.purchase_price - result.walkaway_price).max(0);
-        if over_walkaway > 0 {
-            label(
-                &format!("Over walk-away by {}", format_money(over_walkaway)),
-                rect.x + 30.0,
-                rect.y + 232.0,
-                22,
-                NEGATIVE,
-            );
-        } else {
-            draw_badge(
-                result_verdict(result.profit),
-                Rect::new(rect.x + 30.0, rect.y + 216.0, 128.0, 28.0),
+            (
+                "Deal Result",
+                format_money(result.profit),
+                result_verdict(result.profit).to_string(),
                 result_color(result.profit),
+            ),
+        ];
+        for (index, (title, value, note, color)) in stats.iter().enumerate() {
+            draw_money_stat(
+                title,
+                value,
+                note,
+                Rect::new(
+                    rect.x + 30.0 + index as f32 * (stat_w + stat_gap),
+                    stat_y,
+                    stat_w,
+                    92.0,
+                ),
+                *color,
             );
         }
 
-        let breakdown = Rect::new(rect.x + 30.0, rect.y + 260.0, rect.w - 60.0, 194.0);
+        let room = Rect::new(rect.x + 30.0, rect.y + 220.0, rect.w - 60.0, 58.0);
+        dark_panel(room);
+        label(
+            &format!(
+                "{} reserve  {}  |  {} campaign {}  |  {} bidders  |  demand {}/100  |  total deal costs {}",
+                result.reserve_choice.label(),
+                format_money(result.reserve_price),
+                result.marketing_plan.label(),
+                format_money(result.marketing_cost),
+                result.bidder_count,
+                result.demand_score,
+                format_money(result.total_costs)
+            ),
+            room.x + 18.0,
+            room.y + 34.0,
+            16,
+            TEXT,
+        );
+
+        let breakdown = Rect::new(rect.x + 30.0, rect.y + 292.0, rect.w - 60.0, 146.0);
         dark_panel(breakdown);
         label(
             "Deal Autopsy",
             breakdown.x + 18.0,
-            breakdown.y + 30.0,
+            breakdown.y + 28.0,
             22,
             TEXT_BRIGHT,
         );
@@ -111,37 +126,48 @@ impl App {
             ("Sale timing", result.sale_timing.as_str()),
             ("Reputation", result.reputation_reason.as_str()),
         ];
+        let column_w = (breakdown.w - 54.0) / 2.0;
         for (index, (title, value)) in rows.iter().enumerate() {
-            let y = breakdown.y + 58.0 + index as f32 * 22.0;
-            label(title, breakdown.x + 18.0, y, 16, TEXT_DIM);
+            let column = index % 2;
+            let row = index / 2;
+            let x = breakdown.x + 18.0 + column as f32 * (column_w + 18.0);
+            let y = breakdown.y + 58.0 + row as f32 * 27.0;
+            label(title, x, y, 15, TEXT_DIM);
             label_fit(
                 value,
-                breakdown.x + 220.0,
+                x + 146.0,
                 y,
-                breakdown.w - 238.0,
-                16,
+                column_w - 154.0,
+                15,
                 autopsy_color(value),
             );
         }
 
-        let lesson = Rect::new(rect.x + 30.0, rect.y + 472.0, rect.w - 60.0, 96.0);
+        let lesson = Rect::new(rect.x + 30.0, rect.y + 450.0, rect.w - 60.0, 96.0);
         soft_panel(lesson);
-        label("Lesson", lesson.x + 18.0, lesson.y + 30.0, 22, TEXT_BRIGHT);
-        let next_y = draw_wrapped_text(
+        let half = (lesson.w - 54.0) / 2.0;
+        label("Lesson", lesson.x + 18.0, lesson.y + 28.0, 20, TEXT_BRIGHT);
+        draw_wrapped_text(
             &result.lesson,
-            lesson.x + 114.0,
-            lesson.y + 30.0,
-            lesson.w - 132.0,
-            16,
+            lesson.x + 18.0,
+            lesson.y + 54.0,
+            half,
+            15,
             TEXT,
         );
-        label("Next", lesson.x + 18.0, next_y + 4.0, 16, ACCENT);
+        label(
+            "Next Auction",
+            lesson.x + half + 36.0,
+            lesson.y + 28.0,
+            20,
+            ACCENT,
+        );
         draw_wrapped_text(
             &result.next_time,
-            lesson.x + 114.0,
-            next_y + 4.0,
-            lesson.w - 132.0,
-            16,
+            lesson.x + half + 36.0,
+            lesson.y + 54.0,
+            half,
+            15,
             ACCENT,
         );
 

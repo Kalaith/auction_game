@@ -28,3 +28,21 @@ fn premium_marketing_adds_pressure_and_cost() {
     assert_eq!(premium.marketing_cost, MarketingPlan::Premium.cost());
     assert!(premium.total_costs > budget.total_costs);
 }
+
+#[test]
+fn sold_property_reports_the_loan_cleared_and_cash_recycled() {
+    let (owned, market) = sample_owned_property();
+    let result = simulate_sale(
+        &owned,
+        &market,
+        ReserveChoice::Conservative,
+        MarketingPlan::Standard,
+    );
+    let sale_price = result.sale_price.expect("conservative reserve should sell");
+
+    assert_eq!(result.debt_repaid, owned.debt);
+    assert_eq!(
+        result.settlement_release,
+        sale_price - result.selling_fees - owned.debt
+    );
+}
