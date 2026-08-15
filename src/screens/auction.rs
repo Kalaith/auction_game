@@ -10,7 +10,7 @@ use crate::sim::auction_sim::{
     begin_auction_calls, hold_player_position, place_player_bid, place_player_jump_bid,
     quick_resolve_auction, stop_player_bidding, AUCTION_DURATION_SECONDS,
 };
-use crate::sim::finance::{finance_snapshot, FinanceSnapshot};
+use crate::sim::finance::{finance_snapshot, rental_underwrite, FinanceSnapshot};
 use crate::sim::research::estimate_reserve;
 use crate::sim::rival_notebook::record_completed_room;
 use crate::sim::valuation::{cash_needed_to_settle, projected_purchase_margin};
@@ -62,6 +62,7 @@ impl App {
         };
         let panel_finance = finance_snapshot(&self.player, self.market(), panel_price);
         let panel_margin = projected_purchase_margin(&property, panel_price, self.market());
+        let panel_rental = rental_underwrite(&property, self.market(), panel_price);
         let mut action = None;
 
         let panel_h = ui_height() - 142.0;
@@ -76,6 +77,7 @@ impl App {
             cash_needed_to_settle(panel_price),
             panel_finance.headroom_after,
             panel_margin,
+            panel_rental.net_cashflow,
         );
         if auction.is_running() && !auction.has_started {
             action = draw_auction_day_lobby(
@@ -371,6 +373,7 @@ fn draw_auction_property_panel(
     cash: i64,
     bank_room: i64,
     margin: i64,
+    rental_cashflow: i64,
 ) {
     soft_panel(rect);
     draw_house_art(
@@ -397,6 +400,7 @@ fn draw_auction_property_panel(
         ("Cash to settle", cash),
         ("Bank room", bank_room),
         ("Margin after fees", margin),
+        ("Rental cashflow / wk", rental_cashflow),
     ];
     for (index, (title, value)) in rows.iter().enumerate() {
         draw_value(
