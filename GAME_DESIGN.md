@@ -47,6 +47,7 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - Walking away preserves capital and can build discipline reputation when a rival overheats.
 - The season ledger values attendance, settled purchases, disciplined exits, post-auction buys, completed sales, and realized profit.
 - The campaign resolves immediately when all three portfolio conditions are true, including after settlement, leasing, or a required repair; success never demands an artificial extra week of costs.
+- A failed season identifies each exact shortfall and names the largest normalized constraint, turning the final ledger into strategy feedback for the next portfolio rather than a generic game-over screen.
 
 ## Content structure
 

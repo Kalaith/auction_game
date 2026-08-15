@@ -132,6 +132,43 @@ fn a_disciplined_three_rental_path_can_complete_the_real_campaign() {
     assert_eq!(campaign_status(&player, market, 12), CampaignStatus::Won);
 }
 
+#[test]
+fn postmortem_names_the_largest_normalized_campaign_gap() {
+    let market = market(0.0);
+    let mut player = Player::new();
+    player.cash = 230_000;
+
+    let assessment = assess_campaign(&player, &market);
+
+    assert_eq!(assessment.homes_short, 3);
+    assert_eq!(assessment.rent_short, CAMPAIGN_GOAL_WEEKLY_RENT);
+    assert_eq!(assessment.net_worth_short, 10_000);
+    assert!(matches!(
+        assessment.priority,
+        CampaignPriority::Rent | CampaignPriority::Homes
+    ));
+}
+
+#[test]
+fn completed_brief_has_no_postmortem_shortfalls() {
+    let market = market(0.0);
+    let mut player = Player::new();
+    for id in 0..3 {
+        let mut owned = owned_property(id);
+        owned.is_leased = true;
+        owned.weekly_rent = 500;
+        player.properties.push(owned);
+    }
+    player.cash = 300_000;
+
+    let assessment = assess_campaign(&player, &market);
+
+    assert_eq!(assessment.homes_short, 0);
+    assert_eq!(assessment.rent_short, 0);
+    assert_eq!(assessment.net_worth_short, 0);
+    assert_eq!(assessment.priority, CampaignPriority::Complete);
+}
+
 fn acquire_authored_rental(
     data: &GameData,
     player: &mut Player,

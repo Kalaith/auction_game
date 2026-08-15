@@ -1,0 +1,4 @@
+
+thread 'main' (27180) panicked at C:\Users\Kalai\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\miniquad-0.4.10\src\graphics.rs:335:37:
+attempt to multiply with overflow
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

@@ -163,6 +163,28 @@ impl App {
                 self.status =
                     "Campaign complete. Review the portfolio or start a new season.".to_string();
             }
+            "conclusion_failed" => {
+                self.start_new_game();
+                let properties: Vec<Property> = self
+                    .data
+                    .properties
+                    .iter()
+                    .filter(|template| [6, 8].contains(&template.id))
+                    .map(Property::from_template)
+                    .collect();
+                for property in properties {
+                    self.seed_owned_property(property);
+                }
+                self.player.cash = 28_000;
+                self.player.career.auctions_attended = 11;
+                self.player.career.homes_bought = 2;
+                self.player.career.disciplined_walkaways = 5;
+                self.week = 25;
+                self.campaign_status = CampaignStatus::Failed;
+                self.screen = Screen::Dashboard;
+                self.status =
+                    "Season closed. Read the binding constraint before starting again.".to_string();
+            }
             "title" => {}
             _ => {
                 self.start_new_game();

@@ -4,7 +4,7 @@ use crate::model::{
     CAMPAIGN_GOAL_WEEKLY_RENT,
 };
 use crate::screens::Screen;
-use crate::sim::campaign::{campaign_progress, next_unlock_note};
+use crate::sim::campaign::{assess_campaign, campaign_progress, next_unlock_note};
 use crate::sim::finance::max_financeable_bid;
 use crate::sim::valuation::{estimated_value_range, net_worth};
 use crate::ui::*;
@@ -91,6 +91,7 @@ impl App {
     fn draw_campaign_conclusion(&mut self, net_worth_value: i64) {
         let won = self.campaign_status == CampaignStatus::Won;
         let rental = crate::sim::rental::portfolio_rental_snapshot(&self.player);
+        let assessment = assess_campaign(&self.player, self.market());
         let title = if won {
             "Portfolio Established"
         } else {
@@ -102,7 +103,7 @@ impl App {
             if won {
                 "Three doors, dependable rent, and enough equity to keep growing: the first portfolio now works without pretending every auction was a win."
             } else {
-                "Week 24 has passed without all three parts of the brief. Review the gap: more houses, more rent, or more equity."
+                "Week 24 has passed. The ledger now shows exactly what constrained this portfolio and what to change next season."
             },
             82.0,
             166.0,
@@ -124,17 +125,29 @@ impl App {
                     self.player.properties.len(),
                     CAMPAIGN_GOAL_PROPERTIES
                 ),
-                "Portfolio doors".to_string(),
+                if won || assessment.homes_short == 0 {
+                    "Goal secured".to_string()
+                } else {
+                    format!("Short {}", plural_homes(assessment.homes_short))
+                },
             ),
             (
                 "Weekly Rent",
                 format_money(rental.gross_rent),
-                format!("Goal {}", format_money(CAMPAIGN_GOAL_WEEKLY_RENT)),
+                if won || assessment.rent_short == 0 {
+                    "Goal secured".to_string()
+                } else {
+                    format!("Short {} / week", format_money(assessment.rent_short))
+                },
             ),
             (
                 "Net Worth",
                 format_money(net_worth_value),
-                format!("Goal {}", format_money(CAMPAIGN_GOAL_NET_WORTH)),
+                if won || assessment.net_worth_short == 0 {
+                    "Goal secured".to_string()
+                } else {
+                    format!("Short {}", format_money(assessment.net_worth_short))
+                },
             ),
         ];
         for (index, (name, value, note)) in stats.iter().enumerate() {
@@ -179,8 +192,30 @@ impl App {
             TEXT_DIM,
         );
 
+        let advice = Rect::new(80.0, 492.0, ui_width() - 160.0, 72.0);
+        soft_panel(advice);
+        label(
+            if won {
+                "WHAT WORKED"
+            } else {
+                "BINDING CONSTRAINT"
+            },
+            advice.x + 18.0,
+            advice.y + 25.0,
+            15,
+            color,
+        );
+        draw_wrapped_text(
+            assessment.priority_advice(),
+            advice.x + 190.0,
+            advice.y + 22.0,
+            advice.w - 208.0,
+            16,
+            TEXT,
+        );
+
         if button(
-            Rect::new(80.0, 516.0, 230.0, 48.0),
+            Rect::new(80.0, 584.0, 230.0, 48.0),
             "REVIEW PORTFOLIO",
             !self.player.properties.is_empty(),
             ButtonTone::Secondary,
@@ -188,7 +223,7 @@ impl App {
             self.screen = Screen::Portfolio;
         }
         if button(
-            Rect::new(ui_width() - 330.0, 516.0, 250.0, 48.0),
+            Rect::new(ui_width() - 330.0, 584.0, 250.0, 48.0),
             "START NEW PORTFOLIO",
             true,
             ButtonTone::Primary,
@@ -364,6 +399,10 @@ impl App {
             );
         }
     }
+}
+
+fn plural_homes(count: usize) -> String {
+    format!("{} {}", count, if count == 1 { "home" } else { "homes" })
 }
 
 fn signed_money(amount: i64) -> String {

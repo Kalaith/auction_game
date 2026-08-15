@@ -18,6 +18,41 @@ pub struct WeeklyPressure {
     pub shortfall_added_to_debt: i64,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CampaignAssessment {
+    pub homes_short: usize,
+    pub rent_short: i64,
+    pub net_worth_short: i64,
+    pub priority: CampaignPriority,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum CampaignPriority {
+    Complete,
+    Homes,
+    Rent,
+    NetWorth,
+}
+
+impl CampaignAssessment {
+    pub fn priority_advice(&self) -> &'static str {
+        match self.priority {
+            CampaignPriority::Complete => {
+                "All three constraints work together. The portfolio is ready for its next cycle."
+            }
+            CampaignPriority::Homes => {
+                "Door count was the binding gap. Preserve registrations and deposits for financeable homes instead of chasing every room."
+            }
+            CampaignPriority::Rent => {
+                "Rent was the binding gap. Compare weekly rent against settlement cash, repair needs, and debt before raising the paddle."
+            }
+            CampaignPriority::NetWorth => {
+                "Equity was the binding gap. Buy below value, create measured upside, and stop bidding when auction pressure erases the margin."
+            }
+        }
+    }
+}
+
 pub fn apply_weekly_pressure(player: &mut Player, market: &MarketEvent) -> WeeklyPressure {
     let rental = apply_rental_income(player);
     let debt_interest = weekly_debt_interest(player.debt, market);
@@ -88,6 +123,43 @@ pub fn campaign_progress(player: &Player, market: &MarketEvent) -> (usize, i64, 
         portfolio_rental_snapshot(player).gross_rent,
         net_worth(player, market),
     )
+}
+
+pub fn assess_campaign(player: &Player, market: &MarketEvent) -> CampaignAssessment {
+    let (homes, rent, worth) = campaign_progress(player, market);
+    let homes_short = CAMPAIGN_GOAL_PROPERTIES.saturating_sub(homes);
+    let rent_short = (CAMPAIGN_GOAL_WEEKLY_RENT - rent).max(0);
+    let net_worth_short = (CAMPAIGN_GOAL_NET_WORTH - worth).max(0);
+    let normalized = [
+        (
+            homes_short as f32 / CAMPAIGN_GOAL_PROPERTIES as f32,
+            CampaignPriority::Homes,
+        ),
+        (
+            rent_short as f32 / CAMPAIGN_GOAL_WEEKLY_RENT as f32,
+            CampaignPriority::Rent,
+        ),
+        (
+            net_worth_short as f32 / CAMPAIGN_GOAL_NET_WORTH as f32,
+            CampaignPriority::NetWorth,
+        ),
+    ];
+    let priority = if homes_short == 0 && rent_short == 0 && net_worth_short == 0 {
+        CampaignPriority::Complete
+    } else {
+        normalized
+            .into_iter()
+            .max_by(|left, right| left.0.total_cmp(&right.0))
+            .map(|(_, priority)| priority)
+            .unwrap_or(CampaignPriority::Complete)
+    };
+
+    CampaignAssessment {
+        homes_short,
+        rent_short,
+        net_worth_short,
+        priority,
+    }
 }
 
 pub fn suburb_is_unlocked(suburb: &str, week: u32, net_worth: i64, reputation: i32) -> bool {
