@@ -166,3 +166,49 @@ fn crossing_the_true_reserve_announces_on_market_without_revealing_it_early() {
         .iter()
         .any(|entry| entry.text.contains("on the market")));
 }
+
+#[test]
+fn waiting_earns_a_room_read_and_the_next_bid_makes_it_stale() {
+    let mut auction = auction();
+
+    hold_player_position(&mut auction);
+    assert!(auction.last_room_read.is_some());
+
+    place_player_bid(&mut auction);
+    assert!(auction.last_room_read.is_none());
+}
+
+#[test]
+fn diligence_changes_room_read_precision() {
+    let mut auction = auction();
+    auction.player_research_level = ResearchLevel::StreetScan;
+    let street_read = room_read(&auction);
+    auction.player_research_level = ResearchLevel::AgentPack;
+    let agent_read = room_read(&auction);
+
+    assert!(street_read.contains(':'));
+    assert!(agent_read.contains("looks"));
+    assert_ne!(street_read, agent_read);
+}
+
+#[test]
+fn ego_bidder_can_stretch_when_the_player_makes_it_personal() {
+    let mut auction = auction();
+    auction.last_bidder = Some(BidderActor::Player);
+    let ego_limit = auction.bidders[1].max_price;
+
+    assert!(bidder_effective_ceiling(&auction, 1) > ego_limit);
+}
+
+#[test]
+fn quick_resolution_always_reaches_a_hammer_or_pass_in() {
+    let mut auction = auction();
+    stop_player_bidding(&mut auction);
+
+    quick_resolve_auction(&mut auction);
+
+    assert!(auction.status.is_some());
+    if matches!(auction.status, Some(AuctionStatus::SoldToNpc(_))) {
+        assert!(auction.current_bid >= auction.reserve_price);
+    }
+}

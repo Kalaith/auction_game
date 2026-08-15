@@ -1,5 +1,6 @@
 use crate::app::App;
 use crate::model::Property;
+use crate::sim::rental::weekly_rent_for;
 use crate::sim::valuation::estimated_value_range;
 use crate::ui::*;
 use macroquad::prelude::*;
@@ -8,7 +9,7 @@ const FILTERS: [&str; 5] = [
     "All",
     "Low Risk",
     "High Upside",
-    "Hot Demand",
+    "High Yield",
     "Cheap Entry",
 ];
 
@@ -57,7 +58,7 @@ impl App {
             .collect();
 
         let card_w = (ui_width() - 86.0) / 3.0;
-        let card_h = 218.0;
+        let card_h = 206.0;
         let mut inspect_index = None;
 
         for (slot, property_index) in visible.iter().enumerate() {
@@ -73,7 +74,7 @@ impl App {
             label_fit(
                 &property.address,
                 x + 14.0,
-                y + 122.0,
+                y + 112.0,
                 card_w - 144.0,
                 21,
                 TEXT_BRIGHT,
@@ -81,35 +82,35 @@ impl App {
             label(
                 reason_to_care(property, self),
                 x + 14.0,
-                y + 146.0,
+                y + 136.0,
                 16,
                 verdict_color(property, self),
             );
             label(
                 &format!("Guide {}", format_money(property.guide_price)),
                 x + 14.0,
-                y + 174.0,
+                y + 162.0,
                 19,
                 POSITIVE,
             );
             draw_badge(
                 upside_badge(property, self),
-                Rect::new(x + 14.0, y + 188.0, 108.0, 24.0),
+                Rect::new(x + 14.0, y + 176.0, 108.0, 24.0),
                 POSITIVE,
             );
             draw_badge(
                 risk_badge(property),
-                Rect::new(x + 132.0, y + 188.0, 96.0, 24.0),
+                Rect::new(x + 132.0, y + 176.0, 96.0, 24.0),
                 risk_color(property),
             );
             draw_badge(
-                demand_badge(property),
-                Rect::new(x + 238.0, y + 188.0, 104.0, 24.0),
+                &yield_badge(property, self),
+                Rect::new(x + 238.0, y + 176.0, 104.0, 24.0),
                 crate::ui::BLUE,
             );
 
             let inspect_pressed = if button(
-                Rect::new(x + card_w - 116.0, y + 142.0, 98.0, 34.0),
+                Rect::new(x + card_w - 116.0, y + 130.0, 98.0, 34.0),
                 "Inspect",
                 true,
                 ButtonTone::Primary,
@@ -127,14 +128,22 @@ impl App {
             let empty = Rect::new(28.0, 214.0, ui_width() - 56.0, 150.0);
             soft_panel(empty);
             label(
-                "No listings match this filter.",
+                if self.available_properties.is_empty() {
+                    "The season's auction book is exhausted."
+                } else {
+                    "No listings match this filter."
+                },
                 empty.x + 20.0,
                 empty.y + 48.0,
                 24,
                 TEXT_BRIGHT,
             );
             label(
-                "Try All, or advance the week to refresh the market.",
+                if self.available_properties.is_empty() {
+                    "Tap PORTFOLIO to improve, lease, hold, or sell the homes you secured."
+                } else {
+                    "Tap ALL, or advance the week to rotate the market."
+                },
                 empty.x + 20.0,
                 empty.y + 82.0,
                 18,
@@ -152,7 +161,7 @@ fn listing_matches(app: &App, property: &Property) -> bool {
     match app.listing_filter {
         1 => property.hidden_defect_risk < 0.18,
         2 => upside_amount(property, app) >= 70_000,
-        3 => property.buyer_demand >= 65,
+        3 => gross_yield(property, app) >= 0.05,
         4 => property.guide_price <= 500_000,
         _ => true,
     }
@@ -194,14 +203,12 @@ fn risk_color(property: &Property) -> Color {
     }
 }
 
-fn demand_badge(property: &Property) -> &'static str {
-    if property.buyer_demand >= 70 {
-        "HOT DEMAND"
-    } else if property.buyer_demand >= 55 {
-        "STEADY"
-    } else {
-        "SOFT ROOM"
-    }
+fn gross_yield(property: &Property, app: &App) -> f32 {
+    weekly_rent_for(property, app.market()) as f32 * 52.0 / property.guide_price.max(1) as f32
+}
+
+fn yield_badge(property: &Property, app: &App) -> String {
+    format!("{:.1}% YIELD", gross_yield(property, app) * 100.0)
 }
 
 fn reason_to_care(property: &Property, app: &App) -> &'static str {

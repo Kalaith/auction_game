@@ -1,5 +1,7 @@
 use super::*;
 use crate::model::DealArchetype;
+use crate::model::Property;
+use crate::sim::rental::weekly_rent_for;
 use std::collections::HashSet;
 
 #[test]
@@ -27,4 +29,20 @@ fn weekly_property_costs_stay_in_the_rebalanced_band() {
         .properties
         .iter()
         .all(|property| (90..=220).contains(&property.holding_cost_per_week)));
+}
+
+#[test]
+fn starter_market_contains_multiple_high_yield_choices() {
+    let data = GameData::load();
+    let market = &data.market_events[0];
+    let high_yield_count = data
+        .properties
+        .iter()
+        .map(Property::from_template)
+        .filter(|property| {
+            weekly_rent_for(property, market) as f32 * 52.0 / property.guide_price as f32 >= 0.05
+        })
+        .count();
+
+    assert!(high_yield_count >= 4);
 }

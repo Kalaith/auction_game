@@ -83,6 +83,7 @@ pub fn create_auction(
         player_bid_count: 0,
         on_market_announced: false,
         vendor_bid_used: false,
+        last_room_read: None,
     }
 }
 
@@ -153,6 +154,7 @@ pub fn place_player_bid(auction: &mut Auction) {
 
     let next_bid = auction.next_bid();
     auction.current_bid = next_bid;
+    auction.last_room_read = None;
     auction.last_bidder = Some(BidderActor::Player);
     auction.player_bid_count += 1;
     extend_if_needed(auction);
@@ -182,6 +184,7 @@ pub fn place_player_jump_bid(auction: &mut Auction) -> String {
 
     let jump_bid = auction.jump_bid();
     auction.current_bid = jump_bid;
+    auction.last_room_read = None;
     auction.last_bidder = Some(BidderActor::Player);
     auction.jump_bid_available = false;
     auction.player_bid_count += 1;
@@ -257,6 +260,7 @@ pub fn hold_player_position(auction: &mut Auction) -> String {
     }
 
     let read = room_read(auction);
+    auction.last_room_read = Some(read.clone());
     push_log(auction, format!("You wait with the paddle down. {read}"));
     auction.call_timer = auction.call_timer.min(0.45);
     for bidder in &mut auction.bidders {
@@ -289,6 +293,19 @@ pub fn room_read(auction: &Auction) -> String {
         return "No active bidder wants the next bid.".to_string();
     };
     let bidder = &auction.bidders[index];
+    if auction.player_research_level == ResearchLevel::StreetScan {
+        return format!("{}: {}", bidder.name, bidder.tell);
+    }
+    if auction.player_research_level == ResearchLevel::AgentPack {
+        return if headroom <= auction.bid_increment * 2 {
+            format!("{} looks uncomfortable at the next call.", bidder.name)
+        } else {
+            format!(
+                "{} still looks composed; the ceiling is unclear.",
+                bidder.name
+            )
+        };
+    }
     if headroom < 0 {
         format!("{} is priced out if the room asks again.", bidder.name)
     } else if headroom <= auction.bid_increment {
@@ -348,6 +365,7 @@ fn place_npc_bid(auction: &mut Auction, index: usize) {
     let next_bid = npc_bid_amount(auction, index);
     let was_stretch = next_bid > auction.bidders[index].max_price;
     auction.current_bid = next_bid;
+    auction.last_room_read = None;
     auction.last_bidder = Some(BidderActor::Npc(index));
     auction.bidders[index].bid_count += 1;
     auction.bidders[index].heat = (auction.bidders[index].heat + 12).min(100);

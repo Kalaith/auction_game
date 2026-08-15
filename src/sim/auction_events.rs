@@ -17,6 +17,7 @@ pub(super) fn place_vendor_bid(auction: &mut Auction) {
         return;
     }
     auction.current_bid = vendor_bid;
+    auction.last_room_read = None;
     auction.last_bidder = Some(BidderActor::Vendor);
     push_log(
         auction,

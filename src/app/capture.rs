@@ -1,7 +1,7 @@
 use super::App;
 use crate::model::{CampaignStatus, OwnedProperty, Property, ResearchLevel, WalkawayStyle};
 use crate::screens::Screen;
-use crate::sim::auction_sim::place_player_bid;
+use crate::sim::auction_sim::{hold_player_position, place_player_bid};
 use crate::sim::maintenance::{next_maintenance_week, trigger_due_maintenance};
 use crate::sim::rental::weekly_rent_for_owned;
 use crate::sim::valuation::{deposit, purchase_fees};
@@ -39,6 +39,15 @@ impl App {
                     if let Some(auction) = self.current_auction.as_mut() {
                         auction.current_bid = auction.reserve_price - auction.bid_increment;
                         place_player_bid(auction);
+                    }
+                }
+            }
+            "auction_read" => {
+                self.start_new_game();
+                if let Some(property) = self.available_properties.first().cloned() {
+                    self.start_auction(property.id);
+                    if let Some(auction) = self.current_auction.as_mut() {
+                        hold_player_position(auction);
                     }
                 }
             }

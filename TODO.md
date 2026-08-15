@@ -6,7 +6,7 @@
 
 ## Auction depth
 
-- Add deterministic coverage for NPC-to-NPC hammer outcomes and all emotional stretch archetypes.
+- Add deterministic coverage for every emotional stretch archetype.
 
 ## Presentation
 

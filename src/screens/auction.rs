@@ -6,7 +6,7 @@ use crate::screens::auction_widgets::{
 use crate::screens::Screen;
 use crate::sim::auction_sim::{
     hold_player_position, place_player_bid, place_player_jump_bid, quick_resolve_auction,
-    room_read, stop_player_bidding, AUCTION_DURATION_SECONDS,
+    stop_player_bidding, AUCTION_DURATION_SECONDS,
 };
 use crate::sim::finance::{finance_snapshot, FinanceSnapshot};
 use crate::sim::research::estimate_reserve;
@@ -461,7 +461,10 @@ fn draw_live_decision_panel(
         if jump_over_plan { NEGATIVE } else { WARNING },
     );
     draw_wrapped_text(
-        &format!("Room read: {}", room_read(auction)),
+        auction
+            .last_room_read
+            .as_deref()
+            .unwrap_or("Tap WAIT & READ ROOM to observe a current tell."),
         rect.x + 54.0,
         rect.y + 444.0,
         rect.w - 108.0,

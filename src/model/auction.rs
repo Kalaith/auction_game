@@ -86,6 +86,8 @@ pub struct Auction {
     pub on_market_announced: bool,
     #[serde(default)]
     pub vendor_bid_used: bool,
+    #[serde(default)]
+    pub last_room_read: Option<String>,
 }
 
 impl Auction {
