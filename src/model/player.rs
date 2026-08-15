@@ -11,6 +11,8 @@ pub struct Player {
     pub reputation: i32,
     #[serde(default)]
     pub career: CareerRecord,
+    #[serde(default)]
+    pub rival_notebook: Vec<crate::model::RivalRecord>,
 }
 
 impl Player {
@@ -21,6 +23,7 @@ impl Player {
             properties: Vec::new(),
             reputation: 0,
             career: CareerRecord::default(),
+            rival_notebook: Vec::new(),
         }
     }
 }

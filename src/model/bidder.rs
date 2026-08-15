@@ -76,3 +76,13 @@ pub struct Bidder {
     pub has_logged_exit: bool,
     pub stretch_bid_used: bool,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct RivalRecord {
+    pub name: String,
+    pub bidder_type: BidderType,
+    pub auctions_met: u32,
+    pub auctions_won: u32,
+    pub highest_room_price: i64,
+    pub stretches_seen: u32,
+}

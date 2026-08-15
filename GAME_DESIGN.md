@@ -46,6 +46,7 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 - Maintenance checks occur on a disclosed schedule, reduce collected rent until repaired, and never arrive as uncontrolled random punishment.
 - Walking away preserves capital and can build discipline reputation when a rival overheats.
 - The season ledger values attendance, settled purchases, disciplined exits, post-auction buys, completed sales, and realized profit.
+- Named bidders recur across authored Saturdays. Completed rooms persist appearances, wins, stretch behaviour, and highest prices in the player's notebook, so recognition becomes earned information.
 - The campaign resolves immediately when all three portfolio conditions are true, including after settlement, leasing, or a required repair; success never demands an artificial extra week of costs.
 - A failed season identifies each exact shortfall and names the largest normalized constraint, turning the final ledger into strategy feedback for the next portfolio rather than a generic game-over screen.
 

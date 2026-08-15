@@ -1,6 +1,7 @@
 use super::App;
 use crate::model::{
-    AuctionStatus, CampaignStatus, OwnedProperty, Property, ResearchLevel, WalkawayStyle,
+    AuctionStatus, CampaignStatus, OwnedProperty, Property, ResearchLevel, RivalRecord,
+    WalkawayStyle,
 };
 use crate::screens::Screen;
 use crate::sim::auction_sim::{begin_auction_calls, hold_player_position, place_player_bid};
@@ -67,6 +68,24 @@ impl App {
                 self.start_new_game();
                 if let Some(property) = self.available_properties.first().cloned() {
                     self.start_auction(property.id);
+                    if let Some(auction) = self.current_auction.as_ref() {
+                        self.player.rival_notebook = auction
+                            .bidders
+                            .iter()
+                            .map(|bidder| RivalRecord {
+                                name: bidder.name.clone(),
+                                bidder_type: bidder.bidder_type,
+                                auctions_met: 2,
+                                auctions_won: u32::from(
+                                    bidder.bidder_type == crate::model::BidderType::Investor,
+                                ),
+                                highest_room_price: 690_000,
+                                stretches_seen: u32::from(
+                                    bidder.bidder_type == crate::model::BidderType::FirstHomeBuyer,
+                                ),
+                            })
+                            .collect();
+                    }
                     if let Some(auction) = self.current_auction.as_mut() {
                         begin_auction_calls(auction);
                         hold_player_position(auction);

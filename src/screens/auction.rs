@@ -12,6 +12,7 @@ use crate::sim::auction_sim::{
 };
 use crate::sim::finance::{finance_snapshot, FinanceSnapshot};
 use crate::sim::research::estimate_reserve;
+use crate::sim::rival_notebook::record_completed_room;
 use crate::sim::valuation::{cash_needed_to_settle, projected_purchase_margin};
 use crate::ui::*;
 use macroquad::prelude::*;
@@ -102,7 +103,7 @@ impl App {
         } else if let Some(status) = auction.status.clone() {
             action = self.draw_auction_result(center, &auction, status);
         }
-        draw_bidder_panel(right, &auction);
+        draw_bidder_panel(right, &auction, &self.player.rival_notebook);
 
         match action {
             Some(AuctionUiAction::BeginAuction) => {
@@ -139,8 +140,15 @@ impl App {
                     quick_resolve_auction(auction);
                 }
             }
-            Some(AuctionUiAction::Settle) => self.settle_purchase(),
+            Some(AuctionUiAction::Settle) => {
+                let homes_before = self.player.properties.len();
+                self.settle_purchase();
+                if self.player.properties.len() > homes_before {
+                    record_completed_room(&mut self.player.rival_notebook, &auction);
+                }
+            }
             Some(AuctionUiAction::ReturnToListings) => {
+                record_completed_room(&mut self.player.rival_notebook, &auction);
                 if let Some(auction) = &self.current_auction {
                     if matches!(auction.status, Some(AuctionStatus::SoldToNpc(_)))
                         && auction.player_exit_bid.is_some()
@@ -630,7 +638,7 @@ fn draw_live_decision_panel(
     None
 }
 
-fn draw_bidder_panel(rect: Rect, auction: &Auction) {
+fn draw_bidder_panel(rect: Rect, auction: &Auction, notebook: &[crate::model::RivalRecord]) {
     soft_panel(rect);
     let active = auction
         .bidders
@@ -646,6 +654,7 @@ fn draw_bidder_panel(rect: Rect, auction: &Auction) {
     );
     for (index, bidder) in auction.bidders.iter().enumerate() {
         let y = rect.y + 76.0 + index as f32 * 82.0;
+        let history = notebook.iter().find(|record| record.name == bidder.name);
         label_fit(
             &bidder.name,
             rect.x + 18.0,
@@ -656,7 +665,15 @@ fn draw_bidder_panel(rect: Rect, auction: &Auction) {
         );
         let is_leading = auction.last_bidder == Some(BidderActor::Npc(index));
         label_fit(
-            &format!("{} | {}", bidder.bidder_type.label(), bidder.rhythm),
+            &match history {
+                Some(record) => format!(
+                    "{} | MET {} | WON {}",
+                    bidder.bidder_type.label(),
+                    record.auctions_met,
+                    record.auctions_won
+                ),
+                None => format!("{} | FIRST MEETING", bidder.bidder_type.label()),
+            },
             rect.x + 18.0,
             y + 22.0,
             rect.w - 36.0,
@@ -683,7 +700,14 @@ fn draw_bidder_panel(rect: Rect, auction: &Auction) {
             bidder.heat,
         );
         label_fit(
-            &format!("Tell: {}", bidder.tell),
+            &match history {
+                Some(record) => format!(
+                    "HIGH {} | {}",
+                    format_compact_money(record.highest_room_price),
+                    bidder.tell
+                ),
+                None => format!("Tell: {}", bidder.tell),
+            },
             rect.x + 18.0,
             y + 44.0,
             rect.w - 36.0,

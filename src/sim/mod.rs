@@ -7,5 +7,6 @@ pub mod maintenance;
 pub mod renovation;
 pub mod rental;
 pub mod research;
+pub mod rival_notebook;
 pub mod sale_sim;
 pub mod valuation;
