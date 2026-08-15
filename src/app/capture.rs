@@ -36,6 +36,9 @@ impl App {
                     self.buy_research(property.id, ResearchLevel::FullDiligence);
                 }
             }
+            "detail_compact" => self.seed_property_detail_capture(6),
+            "detail_premium" => self.seed_property_detail_capture(4),
+            "detail_large_block" => self.seed_property_detail_capture(11),
             "auction" => {
                 self.start_new_game();
                 if let Some(property) = self.available_properties.first().cloned() {
@@ -259,6 +262,22 @@ impl App {
             .collect();
         for property in samples {
             self.seed_owned_property(property);
+        }
+    }
+
+    fn seed_property_detail_capture(&mut self, property_id: usize) {
+        self.start_new_game();
+        if let Some(template) = self
+            .data
+            .properties
+            .iter()
+            .find(|template| template.id == property_id)
+        {
+            self.available_properties = vec![Property::from_template(template)];
+            self.open_property_detail(0);
+            self.status =
+                "Compare the guide, researched range, rent, margin, and cash before registering."
+                    .to_string();
         }
     }
 

@@ -8,6 +8,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 
 - Study a rotating Saturday schedule and spend up to two auction registrations each week.
 - Inspect properties and estimate risk.
+- Read distinct compact, premium, and large-block facades as quickly as their numbers.
 - Set a walk-away price before bidding.
 - Review auction-day terms, deposit exposure, and finance before tapping START AUCTION CALLS.
 - Raise normally, make one assertive jump, wait for a rival tell, or walk away in live auctions.

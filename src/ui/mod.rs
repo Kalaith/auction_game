@@ -292,10 +292,38 @@ pub fn draw_house_art(rect: Rect, property: &Property) {
         ),
     };
 
-    let house_w = rect.w * 0.60;
-    let house_h = rect.h * 0.38;
-    let house_x = rect.x + rect.w * 0.20;
-    let house_y = rect.y + rect.h * 0.47;
+    let compact = property.land_size <= 350;
+    let large_block = property.land_size >= 650;
+    let premium = property.condition == Condition::Premium;
+    let (house_w, house_h, house_x, house_y) = if compact {
+        (
+            rect.w * 0.72,
+            rect.h * 0.48,
+            rect.x + rect.w * 0.14,
+            rect.y + rect.h * 0.37,
+        )
+    } else if large_block {
+        (
+            rect.w * 0.48,
+            rect.h * 0.34,
+            rect.x + rect.w * 0.23,
+            rect.y + rect.h * 0.51,
+        )
+    } else if premium {
+        (
+            rect.w * 0.66,
+            rect.h * 0.42,
+            rect.x + rect.w * 0.17,
+            rect.y + rect.h * 0.43,
+        )
+    } else {
+        (
+            rect.w * 0.60,
+            rect.h * 0.38,
+            rect.x + rect.w * 0.20,
+            rect.y + rect.h * 0.47,
+        )
+    };
     draw_ellipse(
         house_x + house_w * 0.48,
         house_y + house_h + rect.h * 0.04,
@@ -311,6 +339,26 @@ pub fn draw_house_art(rect: Rect, property: &Property) {
         vec2(house_x + house_w + 12.0, house_y),
         palette.1,
     );
+
+    if compact {
+        draw_line(
+            house_x,
+            house_y + house_h * 0.48,
+            house_x + house_w,
+            house_y + house_h * 0.48,
+            2.0,
+            Color::new(palette.1.r, palette.1.g, palette.1.b, 0.65),
+        );
+        for offset in [0.18, 0.72] {
+            draw_rectangle(
+                house_x + house_w * offset,
+                house_y + house_h * 0.10,
+                house_w * 0.12,
+                house_h * 0.16,
+                Color::new(0.850, 0.860, 0.725, 1.0),
+            );
+        }
+    }
 
     let window_color = Color::new(0.850, 0.860, 0.725, 1.0);
     draw_rectangle(
@@ -334,6 +382,37 @@ pub fn draw_house_art(rect: Rect, property: &Property) {
         house_h * 0.58,
         palette.1,
     );
+
+    if premium {
+        let balcony_y = house_y + house_h * 0.54;
+        draw_line(
+            house_x + house_w * 0.06,
+            balcony_y,
+            house_x + house_w * 0.94,
+            balcony_y,
+            3.0,
+            Color::new(0.870, 0.835, 0.730, 1.0),
+        );
+        for offset in [0.12, 0.32, 0.68, 0.88] {
+            draw_line(
+                house_x + house_w * offset,
+                balcony_y,
+                house_x + house_w * offset,
+                house_y + house_h,
+                2.0,
+                Color::new(0.820, 0.790, 0.700, 1.0),
+            );
+        }
+        for offset in [0.08, 0.84] {
+            draw_rectangle(
+                house_x + house_w * offset,
+                house_y + house_h * 0.87,
+                house_w * 0.08,
+                house_h * 0.13,
+                Color::new(0.095, 0.315, 0.145, 1.0),
+            );
+        }
+    }
     draw_line(
         house_x + house_w * 0.51,
         house_y + house_h,
@@ -360,6 +439,34 @@ pub fn draw_house_art(rect: Rect, property: &Property) {
             2.5,
             PANEL_EDGE,
         );
+    }
+
+    if large_block {
+        let shed_x = rect.x + rect.w * 0.76;
+        let shed_y = rect.y + rect.h * 0.61;
+        draw_rectangle(
+            shed_x,
+            shed_y,
+            rect.w * 0.13,
+            rect.h * 0.15,
+            Color::new(0.420, 0.380, 0.310, 1.0),
+        );
+        draw_triangle(
+            vec2(shed_x - 4.0, shed_y),
+            vec2(shed_x + rect.w * 0.065, shed_y - rect.h * 0.07),
+            vec2(shed_x + rect.w * 0.13 + 4.0, shed_y),
+            palette.1,
+        );
+        for offset in [0.04, 0.14, 0.86, 0.96] {
+            draw_line(
+                rect.x + rect.w * offset,
+                rect.y + rect.h * 0.76,
+                rect.x + rect.w * offset,
+                rect.y + rect.h * 0.91,
+                2.0,
+                Color::new(0.520, 0.475, 0.390, 1.0),
+            );
+        }
     }
 
     for offset in [0.08, 0.88] {

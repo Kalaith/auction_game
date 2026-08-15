@@ -55,3 +55,5 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 ## Content structure
 
 Twelve authored properties cover rental holds, quiet bargains, risky fixers, pretty traps, land plays, renovator bait, hot-suburb FOMO, and auction traps. Six market pulses rotate suburb demand, borrowing power, renovation appetite, premium liquidity, and rental conditions. The weekly schedule rotates deterministically so patience changes what appears without hiding the system behind uncontrolled randomness.
+
+The listing art reinforces the asset read: compact sites use taller terrace-like facades, premium homes show balconies, columns, and landscaping, while large blocks shrink the dwelling into a visible yard with fencing and outbuildings.
