@@ -30,6 +30,24 @@ fn finance_snapshot_blocks_deals_above_limit() {
 }
 
 #[test]
+fn rental_underwrite_prices_the_debt_and_ownership_cost_before_bidding() {
+    let data = GameData::load();
+    let property = Property::from_template(&data.properties[0]);
+    let market = &data.market_events[0];
+
+    let at_guide = rental_underwrite(&property, market, property.guide_price);
+    let after_chasing = rental_underwrite(&property, market, property.guide_price + 100_000);
+
+    assert_eq!(at_guide.property_cost, property.holding_cost_per_week);
+    assert_eq!(
+        at_guide.net_cashflow,
+        at_guide.gross_rent - at_guide.management - at_guide.property_cost - at_guide.loan_interest
+    );
+    assert!(after_chasing.loan_interest >= at_guide.loan_interest);
+    assert!(after_chasing.net_cashflow <= at_guide.net_cashflow);
+}
+
+#[test]
 fn principal_payment_reduces_cash_and_both_debt_ledgers() {
     let data = GameData::load();
     let market = &data.market_events[0];

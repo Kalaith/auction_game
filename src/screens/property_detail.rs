@@ -1,7 +1,7 @@
 use crate::app::App;
 use crate::model::{Property, ResearchLevel, WalkawayStyle};
 use crate::screens::Screen;
-use crate::sim::finance::finance_snapshot;
+use crate::sim::finance::{finance_snapshot, rental_underwrite};
 use crate::sim::rental::weekly_rent_for;
 use crate::sim::research::{
     comparable_sale_value, due_diligence_note, estimate_reserve, recommended_walkaway,
@@ -316,6 +316,7 @@ fn draw_detail_summary(app: &App, rect: Rect, property: &Property, research_leve
 fn draw_walkaway_panel(app: &mut App, rect: Rect, property: &Property) {
     let margin = projected_purchase_margin(property, app.walkaway_price, app.market());
     let finance = finance_snapshot(&app.player, app.market(), app.walkaway_price);
+    let rental = rental_underwrite(property, app.market(), app.walkaway_price);
     label(
         "Walk-away Strategy",
         rect.x + 18.0,
@@ -383,9 +384,10 @@ fn draw_walkaway_panel(app: &mut App, rect: Rect, property: &Property) {
     );
     label(
         &format!(
-            "Cash to settle: {} | Margin: {} | Bank room: {}",
+            "Cash: {} | Margin: {} | Rental cashflow: {}/wk | Bank: {}",
             format_money(cash_needed_to_settle(app.walkaway_price)),
             format_money(margin),
+            format_money(rental.net_cashflow),
             format_money(finance.headroom_after)
         ),
         rect.x + 386.0,

@@ -91,7 +91,7 @@ pub fn portfolio_rental_snapshot(player: &Player) -> RentalSnapshot {
         .filter(|owned| owned.is_leased)
         .fold(RentalSnapshot::default(), |mut total, owned| {
             let collected_rent = effective_weekly_rent(owned);
-            let operating_cost = rental_operating_cost(collected_rent);
+            let operating_cost = rental_management_cost(collected_rent);
             total.gross_rent += collected_rent;
             total.operating_cost += operating_cost;
             total.net_income += owned.weekly_rent - operating_cost;
@@ -104,7 +104,7 @@ pub fn apply_rental_income(player: &mut Player) -> RentalSnapshot {
     for owned in &mut player.properties {
         if owned.is_leased {
             let collected_rent = effective_weekly_rent(owned);
-            let operating_cost = rental_operating_cost(collected_rent);
+            let operating_cost = rental_management_cost(collected_rent);
             owned.rent_received += collected_rent;
             owned.operating_spend += operating_cost;
         }
@@ -112,7 +112,7 @@ pub fn apply_rental_income(player: &mut Player) -> RentalSnapshot {
     snapshot
 }
 
-fn rental_operating_cost(weekly_rent: i64) -> i64 {
+pub fn rental_management_cost(weekly_rent: i64) -> i64 {
     round_to_ten(weekly_rent as f32 * 0.12)
 }
 

@@ -1,5 +1,6 @@
-use crate::model::{MarketEvent, Player, PropertyId};
-use crate::sim::rental::portfolio_rental_snapshot;
+use crate::model::{MarketEvent, Player, Property, PropertyId};
+use crate::sim::campaign::weekly_debt_interest;
+use crate::sim::rental::{portfolio_rental_snapshot, rental_management_cost, weekly_rent_for};
 use crate::sim::valuation::{
     cash_needed_to_settle, current_value, deposit, net_worth, round_down_to_increment,
 };
@@ -36,6 +37,33 @@ pub struct FinanceSnapshot {
     pub cash_after_settle: i64,
     pub can_buy: bool,
     pub stress: FinanceStress,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct RentalUnderwrite {
+    pub gross_rent: i64,
+    pub management: i64,
+    pub property_cost: i64,
+    pub loan_interest: i64,
+    pub net_cashflow: i64,
+}
+
+pub fn rental_underwrite(
+    property: &Property,
+    market: &MarketEvent,
+    purchase_price: i64,
+) -> RentalUnderwrite {
+    let gross_rent = weekly_rent_for(property, market);
+    let management = rental_management_cost(gross_rent);
+    let property_cost = property.holding_cost_per_week;
+    let loan_interest = weekly_debt_interest(purchase_price - deposit(purchase_price), market);
+    RentalUnderwrite {
+        gross_rent,
+        management,
+        property_cost,
+        loan_interest,
+        net_cashflow: gross_rent - management - property_cost - loan_interest,
+    }
 }
 
 pub fn borrowing_limit(player: &Player, market: &MarketEvent) -> i64 {

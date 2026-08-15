@@ -28,6 +28,7 @@ Winning an auction is not automatically good. The real challenge is knowing what
 - Renovate, fund a one-week rental campaign, place or end tenancies, collect rent, handle scheduled maintenance, hold, or sell purchased properties.
 - Track every property, cash, debt, rent, weekly cashflow, fees, repairs, and net worth.
 - Read each home's equity, loan-to-value ratio, and market-adjusted annual loan rate before deciding whether to hold, pay down, refinance, or sell.
+- Underwrite the rent at your chosen walk-away price, including management, property outgoings, and loan interest, before registering to bid.
 
 ## Goal
 
