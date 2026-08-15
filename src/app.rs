@@ -346,7 +346,7 @@ impl App {
         self.purchase_debrief = None;
         self.screen = Screen::Auction;
         self.status =
-            "Auction started. Bid deliberately; losing can be a good decision.".to_string();
+            "Registration complete. Review the terms, then tap START AUCTION CALLS.".to_string();
     }
 
     pub(crate) fn settle_purchase(&mut self) {

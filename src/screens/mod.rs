@@ -1,4 +1,5 @@
 pub mod auction;
+mod auction_lobby;
 pub mod auction_widgets;
 pub mod briefing;
 pub mod dashboard;

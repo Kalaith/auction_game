@@ -73,7 +73,10 @@ pub fn create_auction(
         overtime_count: 0,
         status: None,
         log: vec![BidLog {
-            text: format!("Auction opens at {}.", crate::ui::format_money(opening_bid)),
+            text: format!(
+                "Registration confirmed. Opening call will be {}.",
+                crate::ui::format_money(opening_bid)
+            ),
             seconds_remaining: AUCTION_DURATION_SECONDS,
         }],
         player_walkaway_price,
@@ -87,11 +90,26 @@ pub fn create_auction(
         vendor_bid_used: false,
         last_room_read: None,
         sold_post_auction: false,
+        has_started: false,
     }
 }
 
+pub fn begin_auction_calls(auction: &mut Auction) {
+    if auction.has_started || !auction.is_running() {
+        return;
+    }
+    auction.has_started = true;
+    push_log(
+        auction,
+        format!(
+            "Bidding is open at {}.",
+            crate::ui::format_money(auction.current_bid)
+        ),
+    );
+}
+
 pub fn update_auction(auction: &mut Auction, dt: f32) {
-    if !auction.is_running() {
+    if !auction.is_running() || !auction.has_started {
         return;
     }
 

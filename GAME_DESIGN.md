@@ -19,9 +19,10 @@ The three requirements prevent a single degenerate strategy. Cheap but poor asse
 1. Read the market pulse and rotating Saturday schedule.
 2. Inspect listings, buy due diligence, and choose a walk-away style.
 3. Spend up to two registrations on live auctions—or deliberately spend none.
-4. Read rival tells and choose between RAISE, one ASSERT jump, WAIT & READ ROOM, and WALK AWAY.
-5. Settle a win, then repair, improve, lease, hold, or sell the asset.
-6. Advance the week to collect rent, pay management, ownership costs, and interest, progress works, rotate the market, and refresh registrations.
+4. Review the unconditional auction terms, deposit exposure, finance at the cap, and rival room; then tap START AUCTION CALLS.
+5. Read rival tells and choose between RAISE, one ASSERT jump, WAIT & READ ROOM, and WALK AWAY.
+6. Settle a win, then repair, improve, lease, hold, or sell the asset.
+7. Advance the week to collect rent, pay management, ownership costs, and interest, progress works, rotate the market, and refresh registrations.
 
 ## Decision rules
 

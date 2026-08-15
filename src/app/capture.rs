@@ -3,7 +3,7 @@ use crate::model::{
     AuctionStatus, CampaignStatus, OwnedProperty, Property, ResearchLevel, WalkawayStyle,
 };
 use crate::screens::Screen;
-use crate::sim::auction_sim::{hold_player_position, place_player_bid};
+use crate::sim::auction_sim::{begin_auction_calls, hold_player_position, place_player_bid};
 use crate::sim::maintenance::{next_maintenance_week, trigger_due_maintenance};
 use crate::sim::rental::weekly_rent_for_owned;
 use crate::sim::valuation::{deposit, purchase_fees};
@@ -32,6 +32,17 @@ impl App {
                 self.start_new_game();
                 if let Some(property) = self.available_properties.first().cloned() {
                     self.start_auction(property.id);
+                    if let Some(auction) = self.current_auction.as_mut() {
+                        begin_auction_calls(auction);
+                    }
+                    self.status =
+                        "Bidding is live. Read the room and protect the walk-away.".to_string();
+                }
+            }
+            "auction_lobby" => {
+                self.start_new_game();
+                if let Some(property) = self.available_properties.first().cloned() {
+                    self.start_auction(property.id);
                 }
             }
             "auction_on_market" => {
@@ -39,6 +50,7 @@ impl App {
                 if let Some(property) = self.available_properties.first().cloned() {
                     self.start_auction(property.id);
                     if let Some(auction) = self.current_auction.as_mut() {
+                        begin_auction_calls(auction);
                         auction.current_bid = auction.reserve_price - auction.bid_increment;
                         place_player_bid(auction);
                     }
@@ -49,6 +61,7 @@ impl App {
                 if let Some(property) = self.available_properties.first().cloned() {
                     self.start_auction(property.id);
                     if let Some(auction) = self.current_auction.as_mut() {
+                        begin_auction_calls(auction);
                         hold_player_position(auction);
                     }
                 }
@@ -58,6 +71,7 @@ impl App {
                 if let Some(property) = self.available_properties.first().cloned() {
                     self.start_auction(property.id);
                     if let Some(auction) = self.current_auction.as_mut() {
+                        begin_auction_calls(auction);
                         auction.current_bid = auction.reserve_price - auction.bid_increment * 3;
                         auction.status = Some(AuctionStatus::PassedIn);
                     }

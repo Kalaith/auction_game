@@ -65,14 +65,36 @@ fn profiles() -> Vec<BidderProfileData> {
 }
 
 fn auction() -> Auction {
-    create_auction(
+    let mut auction = create_auction(
         &property(),
         &market(),
         &profiles(),
         480_000,
         ResearchLevel::AgentPack,
         WalkawayStyle::Balanced,
-    )
+    );
+    auction.has_started = true;
+    auction
+}
+
+#[test]
+fn auction_clock_waits_for_the_visible_opening_call() {
+    let mut auction = create_auction(
+        &property(),
+        &market(),
+        &profiles(),
+        480_000,
+        ResearchLevel::AgentPack,
+        WalkawayStyle::Balanced,
+    );
+    let time_before = auction.seconds_remaining;
+
+    update_auction(&mut auction, 5.0);
+    assert_eq!(auction.seconds_remaining, time_before);
+
+    begin_auction_calls(&mut auction);
+    update_auction(&mut auction, 1.0);
+    assert!(auction.seconds_remaining < time_before);
 }
 
 #[test]

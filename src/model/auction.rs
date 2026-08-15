@@ -90,6 +90,8 @@ pub struct Auction {
     pub last_room_read: Option<String>,
     #[serde(default)]
     pub sold_post_auction: bool,
+    #[serde(default = "auction_started_default")]
+    pub has_started: bool,
 }
 
 impl Auction {
@@ -107,5 +109,9 @@ impl Auction {
 }
 
 fn jump_available_default() -> bool {
+    true
+}
+
+fn auction_started_default() -> bool {
     true
 }

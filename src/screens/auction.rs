@@ -1,13 +1,14 @@
 use crate::app::{App, PurchaseDebrief};
 use crate::model::{Auction, AuctionStatus, AuctionTemperature, BidderActor};
+use crate::screens::auction_lobby::{draw_auction_day_lobby, AuctionLobbyAction};
 use crate::screens::auction_widgets::{
     bid_verdict, draw_heat_bar, guidance_color, money_color, mood_color,
 };
 use crate::screens::Screen;
 use crate::sim::auction_events::{accept_post_auction_offer, post_auction_offer};
 use crate::sim::auction_sim::{
-    hold_player_position, place_player_bid, place_player_jump_bid, quick_resolve_auction,
-    stop_player_bidding, AUCTION_DURATION_SECONDS,
+    begin_auction_calls, hold_player_position, place_player_bid, place_player_jump_bid,
+    quick_resolve_auction, stop_player_bidding, AUCTION_DURATION_SECONDS,
 };
 use crate::sim::finance::{finance_snapshot, FinanceSnapshot};
 use crate::sim::research::estimate_reserve;
@@ -16,6 +17,7 @@ use crate::ui::*;
 use macroquad::prelude::*;
 
 enum AuctionUiAction {
+    BeginAuction,
     Bid,
     JumpBid,
     Hold,
@@ -74,7 +76,17 @@ impl App {
             panel_finance.headroom_after,
             panel_margin,
         );
-        if auction.is_running() {
+        if auction.is_running() && !auction.has_started {
+            action = draw_auction_day_lobby(
+                center,
+                &auction,
+                finance_snapshot(&self.player, self.market(), auction.player_walkaway_price),
+            )
+            .map(|lobby_action| match lobby_action {
+                AuctionLobbyAction::Begin => AuctionUiAction::BeginAuction,
+                AuctionLobbyAction::Leave => AuctionUiAction::ReturnToListings,
+            });
+        } else if auction.is_running() {
             action = draw_live_decision_panel(
                 center,
                 &auction,
@@ -93,6 +105,14 @@ impl App {
         draw_bidder_panel(right, &auction);
 
         match action {
+            Some(AuctionUiAction::BeginAuction) => {
+                if let Some(auction) = self.current_auction.as_mut() {
+                    begin_auction_calls(auction);
+                    self.status =
+                        "Bidding is live. Tap RAISE, ASSERT, WAIT & READ ROOM, or WALK AWAY."
+                            .to_string();
+                }
+            }
             Some(AuctionUiAction::Bid) => {
                 if let Some(auction) = self.current_auction.as_mut() {
                     place_player_bid(auction);
@@ -381,15 +401,28 @@ fn draw_auction_property_panel(
     }
     let pressure = 100.0 - auction.seconds_remaining / AUCTION_DURATION_SECONDS * 100.0;
     draw_meter(
-        auction.temperature.label(),
+        if auction.has_started {
+            auction.temperature.label()
+        } else {
+            "Terms & Registration"
+        },
         pressure as i32,
         Rect::new(rect.x + 16.0, rect.y + rect.h - 58.0, rect.w - 32.0, 12.0),
-        temperature_color(auction.temperature),
+        if auction.has_started {
+            temperature_color(auction.temperature)
+        } else {
+            crate::ui::BLUE
+        },
     );
-    label(
-        auction.temperature.description(),
+    label_fit(
+        if auction.has_started {
+            auction.temperature.description()
+        } else {
+            "The clock waits until you tap START AUCTION CALLS."
+        },
         rect.x + 16.0,
         rect.y + rect.h - 18.0,
+        rect.w - 32.0,
         14,
         TEXT_DIM,
     );
